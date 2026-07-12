@@ -1,10 +1,13 @@
-﻿namespace Client
+﻿using Client.Clients;
+
+namespace Client
 {
     internal class Program
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello, World!");
+            ClientTCP client = new ClientTCP();
+            client.Start();
         }
     }
 }

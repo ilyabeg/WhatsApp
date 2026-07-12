@@ -19,7 +19,7 @@ namespace Server.Servers
         public void Listen()
         {            
             using TcpClient client = _listener.AcceptTcpClient();
-            Stream stream = client.GetStream();
+            NetworkStream stream = client.GetStream();
 
             byte[] buffer = new byte[client.ReceiveBufferSize];                        
 
@@ -34,6 +34,7 @@ namespace Server.Servers
         private void StartServer()
         {            
             _listener = new TcpListener(_localhostIP, _listeningPortNumber);
+            Console.WriteLine("Server successfuly initialized.\n");
             _listener.Start();
         }
     }

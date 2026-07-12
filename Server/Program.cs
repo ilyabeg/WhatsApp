@@ -1,10 +1,13 @@
-﻿namespace Server
+﻿using Server.Servers;
+
+namespace Server
 {
     internal class Program
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello, World!");
+            TcpServer server = new TcpServer();
+            server.Listen();
         }
     }
 }
