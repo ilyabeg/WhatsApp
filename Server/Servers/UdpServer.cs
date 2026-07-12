@@ -4,7 +4,7 @@ namespace Server.Servers
 {
     internal class UdpServer : IServer
     {
-        public void Listen()
+        public void Run()
         {
 
         }
