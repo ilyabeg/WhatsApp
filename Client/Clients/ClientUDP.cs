@@ -37,7 +37,7 @@ namespace Client.Clients
 
         public void Start()
         {
-            Console.WriteLine("To Start chatting type: '@user' and write a message (or type 'X' to quit):");
+            Console.WriteLine("To Start chatting type: '@user' and write a message:");
             Task.Run(Read); // run read input task in the background 
 
             while (true)
@@ -50,11 +50,8 @@ namespace Client.Clients
                     continue;
                 }
 
-                if (message.ToLower() == "x") break;
-
                 Send(message);
-            }
-            CloseProg();
+            }            
         }
 
         public void Read()
@@ -68,7 +65,7 @@ namespace Client.Clients
                     byte[] recievedBytes = _client.Receive(ref remoteEndPoint);
                     string recievedMessage = Encoding.UTF8.GetString(recievedBytes);
 
-                    PrintMessageDetails(recievedMessage);
+                    PrintMessage(recievedMessage);
                 }
             }
             catch (Exception)
@@ -77,7 +74,7 @@ namespace Client.Clients
             }
         }
 
-        private void PrintMessageDetails(string message)
+        private void PrintMessage(string message)
         {
             Console.WriteLine(message);
         }
@@ -86,12 +83,6 @@ namespace Client.Clients
         {
             _buffer = Encoding.UTF8.GetBytes(message);
             _client.Send(_buffer, _buffer.Length);
-        }
-
-        private void CloseProg()
-        {
-            Console.WriteLine("Exiting program...");
-            _client.Close();
         }
     }
 }

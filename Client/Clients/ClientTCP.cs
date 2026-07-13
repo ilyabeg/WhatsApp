@@ -38,7 +38,7 @@ namespace Client.Clients
 
         public void Start()
         {
-            Console.WriteLine("To Start chatting type: '@user' and write a message (or type 'X' to quit):");
+            Console.WriteLine("To Start chatting type: '@user' and write a message:");
             Task.Run(Read); // run read input task in the background 
 
             while (true)
@@ -51,11 +51,8 @@ namespace Client.Clients
                     continue;
                 }
 
-                if (message.ToLower() == "x") break;
-
                 Send(message);
             }
-            CloseProg();
         }
 
         private void Send(string message)
@@ -84,12 +81,6 @@ namespace Client.Clients
         private void PrintMessage(string message)
         {
             Console.WriteLine(message);
-        }
-
-        private void CloseProg()
-        {
-            Console.WriteLine("Exiting program...");
-            _client.Close();
         }
     }
 }
