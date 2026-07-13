@@ -16,10 +16,11 @@ namespace Server.Servers
         public static ConcurrentDictionary<string, IPEndPoint> _all_clients; // connected clients by their id
         private readonly int _listeningPortNumber = 14000;
 
-        private UdpIOHandler _ioHandler;
+        private static UdpIOHandler _ioHandler;
         private UdpClientHandler _clientHandler;
 
-        private List<GroupChat> _group_chats = BuildGroupChats();
+        public static List<GroupChat> _group_chats { get; private set; }
+
 
         public UdpServer()
         {
@@ -32,6 +33,7 @@ namespace Server.Servers
             _listener = new UdpClient(_listeningPortNumber);
             _ioHandler = new UdpIOHandler();
             _clientHandler = new UdpClientHandler();
+            _group_chats = BuildGroupChats();
 
             Console.WriteLine("[SERVER] Server successfuly initialized.\n");
         }
@@ -39,13 +41,13 @@ namespace Server.Servers
         public void Run()
         {
             IPEndPoint clientEndPoint = new IPEndPoint(IPAddress.Any, 0);
-            
+            //_ioHandler.DisplayConnectedClients(clientEndPoint);
             try
             {
                 while (true)
                 {
                     byte[] receiveBytes = _listener.Receive(ref clientEndPoint);
-                    string message = Encoding.UTF8.GetString(receiveBytes);
+                    string message = Encoding.UTF8.GetString(receiveBytes).Trim();
 
                     string clientID;
 
@@ -54,13 +56,21 @@ namespace Server.Servers
                     {
                         clientID = GetClientID(receiveBytes);
                         _clientHandler.AddClient(clientID, clientEndPoint);
-                        _ioHandler.DisplayConnectedClients(clientEndPoint);
+                        _ioHandler.DisplayOptions(clientEndPoint);
                     }
                     else
                     {           
                         clientID = _clientHandler.GetClientID(ref clientEndPoint);
                         _ioHandler.PrintMessageDetails(message, clientID);
-                        _ioHandler.HandleMessage(message, clientEndPoint, clientID);
+
+                        if (message.Equals("join", StringComparison.OrdinalIgnoreCase))
+                            _ioHandler.DisplayGroupChats(clientEndPoint);
+
+                        else if (message.Equals("chat", StringComparison.OrdinalIgnoreCase))
+                            _ioHandler.DisplayConnectedClients(clientEndPoint);
+
+                        else
+                            _ioHandler.HandleMessage(message, clientEndPoint, clientID);
                     }                                    
                 }
             }

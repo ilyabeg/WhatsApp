@@ -1,16 +1,16 @@
 ﻿using Server.Client_Handlers;
 using Server.Helpers;
 using Server.Interfaces;
+using Server.Objects;
 using Server.Servers;
 using System.Net;
-using System.Net.Sockets;
 using System.Text;
 
 namespace Server.InputHandlers
 {
     internal class UdpIOHandler : IIOHandler<IPEndPoint>
     {
-        private UdpClientHandler _clientHandler = new UdpClientHandler();   
+        private UdpClientHandler _clientHandler = new UdpClientHandler();
 
         public void HandleMessage(string msg, IPEndPoint client, string sender)
         {
@@ -20,8 +20,8 @@ namespace Server.InputHandlers
                 if (msg == null || msg.IsWhiteSpace())
                     throw new Exception();
 
-                recieverID = MessageProcessor.GetRecieverID(msg.Trim());
-                actualMsg = MessageProcessor.GetActualMsg(msg.Trim());
+                recieverID = MessageProcessor.GetRecieverID(msg);
+                actualMsg = MessageProcessor.GetActualMsg(msg);
 
                 IPEndPoint reciever = UdpServer._all_clients[recieverID];
 
@@ -47,6 +47,27 @@ namespace Server.InputHandlers
             }
             output.Append("\n");
 
+            _clientHandler.SendToClient(client, output.ToString());
+        }
+
+        public void DisplayOptions(IPEndPoint client)
+        {
+            StringBuilder output = new StringBuilder("[SERVER] Options:");
+            output.Append($"\n\t- CHAT: Select a Chat to chat with users.");
+            output.Append($"\n\t- JOIN: Select a GroupChat to chat with users in a group.\n");
+
+            _clientHandler.SendToClient(client, output.ToString());
+        }
+
+        public void DisplayGroupChats(IPEndPoint client)
+        {
+            StringBuilder output = new StringBuilder("[SERVER] To Chat in a group you must join a group first (type: join @'GROUP NAME') ...");
+            output.Append("\nAvailable GroupChats:");
+            foreach (GroupChat group in UdpServer._group_chats)
+            {
+                output.Append($"\n\t- {group.Name} ({((!group.IsPrivate) ? "Public" : "Private")})");
+            }
+            output.Append("\n");
             _clientHandler.SendToClient(client, output.ToString());
         }
 

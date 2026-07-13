@@ -43,13 +43,6 @@ namespace Client.Clients
             while (true)
             {
                 string message = Console.ReadLine();
-
-                if (message == null || message.IsWhiteSpace())
-                {
-                    Console.WriteLine("Please enter a valid input.");
-                    continue;
-                }
-
                 Send(message);
             }            
         }
