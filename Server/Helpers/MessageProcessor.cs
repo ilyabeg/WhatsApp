@@ -29,5 +29,18 @@ namespace Server.Helpers
 
             return message;
         }
+
+        public static string GetGroupName(string msg)
+        {
+            int start = msg.IndexOf('@');
+
+            if (start == -1) throw new Exception();
+
+            string groupName = msg.Substring(start + 1);
+
+            if (groupName == "" || groupName.IsWhiteSpace()) throw new Exception();
+
+            return groupName;
+        }
     }
 }

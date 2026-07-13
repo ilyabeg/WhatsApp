@@ -10,9 +10,9 @@ namespace Server.InputHandlers
 {
     internal class UdpIOHandler : IIOHandler<IPEndPoint>
     {
-        private readonly UdpClientHandler _clientHandler = new UdpClientHandler();
+        private readonly UdpClientHandler _clientHandler = new UdpClientHandler(); 
 
-        public void HandleMessage(string msg, IPEndPoint client, string sender)
+        public void HandleMessage(string msg, IPEndPoint clientEndPoint, string sender)
         {
             string recieverID = "#", actualMsg = "#";
             try
@@ -30,8 +30,26 @@ namespace Server.InputHandlers
             }
             catch (Exception)
             {
-                byte[] reply = Encoding.UTF8.GetBytes("[SERVER] Invalid input.");
-                UdpServer._listener.Send(reply, reply.Length, client);
+                SendInvalidMessage(clientEndPoint);
+            }
+        }
+
+        public void JoinGroupChat(string msg, IPEndPoint clientEndPoint)
+        {
+            try
+            {
+                string groupName = MessageProcessor.GetGroupName(msg);
+
+                foreach (GroupChat group in UdpServer._group_chats)
+                {
+                    if (group.Name.Equals(groupName, StringComparison.OrdinalIgnoreCase))
+                        // change client's port to the group's port
+                        clientEndPoint.Port = group.PortNumber;
+                }
+            }
+            catch
+            {
+                SendInvalidMessage(clientEndPoint);
             }
         }
 
@@ -46,7 +64,6 @@ namespace Server.InputHandlers
                 output.Append($"\n\t- {username} [{userIP} : {userPort}]");
             }
             output.Append("\n");
-
             _clientHandler.SendToClient(client, output.ToString());
         }
 
@@ -55,7 +72,6 @@ namespace Server.InputHandlers
             StringBuilder output = new StringBuilder("[SERVER] Options:");
             output.Append($"\n\t- CHAT: Select a Chat to chat with users.");
             output.Append($"\n\t- JOIN: Select a GroupChat to chat with users in a group.\n");
-
             _clientHandler.SendToClient(client, output.ToString());
         }
 
@@ -78,6 +94,12 @@ namespace Server.InputHandlers
             IPAddress clientIP = _clientHandler.GetClientIP(clientID);
             int clientPort = _clientHandler.GetClientPortNum(clientID);
             Console.WriteLine($"[SERVER] Recieved: '{msg}' from {clientID} [{clientIP} : {clientPort}].");
+        }
+
+        public void SendInvalidMessage(IPEndPoint clientEndPoint)
+        {
+            byte[] reply = Encoding.UTF8.GetBytes("[SERVER] Invalid input.");
+            UdpServer._listener.Send(reply, reply.Length, clientEndPoint);
         }
     }
 }

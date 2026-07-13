@@ -39,7 +39,7 @@ namespace Server.Servers
         public void Run()
         {
             IPEndPoint clientEndPoint = new IPEndPoint(IPAddress.Any, 0);
-            //_ioHandler.DisplayConnectedClients(clientEndPoint);
+
             try
             {
                 while (true)

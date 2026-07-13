@@ -28,6 +28,9 @@ namespace Server.Client_Handlers
             else if (message.Equals("chat", StringComparison.OrdinalIgnoreCase))
                 _handler.DisplayConnectedClients(clientEndPoint);
 
+            else if (message.StartsWith("join", StringComparison.OrdinalIgnoreCase))
+                _handler.JoinGroupChat(message, clientEndPoint);
+
             else
                 _handler.HandleMessage(message, clientEndPoint, clientID);
         }
