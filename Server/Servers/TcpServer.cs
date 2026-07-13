@@ -10,7 +10,7 @@ namespace Server.Servers
     internal class TcpServer : IServer
     {
         private TcpListener _listener;
-        public static ConcurrentDictionary<string, TcpClient> _all_clients; // connected client by their id
+        public static ConcurrentDictionary<string, TcpClient> _all_clients; // connected clients by their id
         private readonly int _listeningPortNumber = 13000;
         private readonly IPAddress _localhostIP = IPAddress.Parse("127.0.0.1");        
 
@@ -41,7 +41,7 @@ namespace Server.Servers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[SERVER ERROR!] {ex.Message}");
+                Console.WriteLine($"[SERVER ERROR!] Server crashed due to: {ex.Message}");
             }
         }
 
@@ -73,7 +73,7 @@ namespace Server.Servers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[SERVER ERROR!] {ex.Message}");
+                Console.WriteLine($"[SERVER ERROR!] Server crashed due to: {ex.Message}");
             }
         }        
 

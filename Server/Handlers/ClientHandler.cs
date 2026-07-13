@@ -38,7 +38,7 @@ namespace Server.Handlers
                 username += hash.Substring(hash.Length - 4);
             }
             TcpServer._all_clients.TryAdd(username, client);
-            Console.WriteLine($"\n[SERVER] New User {username} logged in...\n");
+            Console.WriteLine($"[SERVER] New User {username} logged in...\n");
         }
 
         public static void SendToClient(TcpClient client, string msg)
