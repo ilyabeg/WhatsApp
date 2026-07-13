@@ -5,24 +5,23 @@ using System.Text;
 
 namespace Client.Clients
 {
-    internal class ClientTCP : IClient
+    internal class ClientUDP : IClient
     {
-        private TcpClient _client;
-        private NetworkStream _stream;
+        private UdpClient _client;
         private byte[] _buffer;
         private string _username = "user0";
         private readonly int _bufferSize = 4096;
-        private readonly int _serverPortNumber = 13000;
+        private readonly int _serverPortNumber = 14000;
         private readonly string _localhostIP = "127.0.0.1";
 
-        public ClientTCP()
+        public ClientUDP()
         {
-            _client = new TcpClient(_localhostIP, _serverPortNumber);
-            _stream = _client.GetStream();
+            _client = new UdpClient();
+            _client.Connect(_localhostIP, _serverPortNumber); // save server adress in memory
             _buffer = new byte[_bufferSize];
             _username = GetUserName(_username);
 
-            Send(_username); // send user name to let the server save it
+            Send(_username); // send over username to the server
         }
 
         private string GetUserName(string deafult)
@@ -30,7 +29,7 @@ namespace Client.Clients
             Console.WriteLine($"Before starting to chat, enter your user name (current deafult: {deafult}):");
             string username = Console.ReadLine();
 
-            if (username != null && !username.IsWhiteSpace()) 
+            if (username != null && !username.IsWhiteSpace())
                 return username;
 
             return deafult;
@@ -58,21 +57,18 @@ namespace Client.Clients
             CloseProg();
         }
 
-        private void Send(string message)
-        {
-            byte[] buffer = Encoding.UTF8.GetBytes(message);
-            _stream.Write(buffer, 0, buffer.Length);
-        }
-
-        private void Read()
+        public void Read()
         {
             try
             {
-                int totalRead;
-                while ((totalRead = _stream.Read(_buffer, 0, _buffer.Length)) != 0)
+                IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0); // any remote user/server 
+
+                while (true)
                 {
-                    string recievedMessage = Encoding.UTF8.GetString(_buffer, 0, totalRead);
-                    PrintMessage(recievedMessage);
+                    byte[] recievedBytes = _client.Receive(ref remoteEndPoint);
+                    string recievedMessage = Encoding.UTF8.GetString(recievedBytes);
+
+                    PrintMessageDetails(recievedMessage);
                 }
             }
             catch (Exception)
@@ -81,9 +77,15 @@ namespace Client.Clients
             }
         }
 
-        private void PrintMessage(string message)
+        private void PrintMessageDetails(string message)
         {
             Console.WriteLine(message);
+        }
+
+        private void Send(string message)
+        {
+            _buffer = Encoding.UTF8.GetBytes(message);
+            _client.Send(_buffer, _buffer.Length);
         }
 
         private void CloseProg()

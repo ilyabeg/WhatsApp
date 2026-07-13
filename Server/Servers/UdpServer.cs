@@ -1,4 +1,6 @@
-﻿using Server.Interfaces;
+﻿using Server.Client_Handlers;
+using Server.InputHandlers;
+using Server.Interfaces;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
@@ -8,9 +10,12 @@ namespace Server.Servers
 {
     internal class UdpServer : IServer
     {
-        private UdpClient _listener;
-        public static ConcurrentDictionary<string, UdpClient> _all_clients; // connected clients by their id
+        public static UdpClient _listener { get; private set; }
+        public static ConcurrentDictionary<string, IPEndPoint> _all_clients; // connected clients by their id
         private readonly int _listeningPortNumber = 14000;
+
+        private UdpIOHandler _ioHandler;
+        private UdpClientHandler _clientHandler;
 
         public UdpServer()
         {
@@ -19,17 +24,18 @@ namespace Server.Servers
 
         private void InitServer()
         {
-            _all_clients = new ConcurrentDictionary<string, UdpClient>();
-            _listener = new UdpClient(_listeningPortNumber);            
+            _all_clients = new ConcurrentDictionary<string, IPEndPoint>();
+            _listener = new UdpClient(_listeningPortNumber);
+            _ioHandler = new UdpIOHandler();
+            _clientHandler = new UdpClientHandler();
+
             Console.WriteLine("[SERVER] Server successfuly initialized.\n");
         }
 
         public void Run()
         {
             IPEndPoint clientEndPoint = new IPEndPoint(IPAddress.Any, 0);
-            IPAddress clientIP = clientEndPoint.Address;
-            int clientPort = clientEndPoint.Port;
-
+            
             try
             {
                 while (true)
@@ -37,13 +43,43 @@ namespace Server.Servers
                     byte[] receiveBytes = _listener.Receive(ref clientEndPoint);
                     string message = Encoding.UTF8.GetString(receiveBytes);
 
-                    Console.WriteLine($"[SERVER] Recieved: {message} from [{clientIP} : {clientPort}]");
+                    string clientID;
+
+                    // check if new datapacket belongs to a new user
+                    if (IsNewClient(ref clientEndPoint))
+                    {
+                        clientID = GetClientID(receiveBytes);
+                        _clientHandler.AddClient(clientID, clientEndPoint);
+                        _ioHandler.DisplayConnectedClients(clientEndPoint);
+                    }
+                    else
+                    {           
+                        clientID = _clientHandler.GetClientID(ref clientEndPoint);
+                        _ioHandler.PrintMessageDetails(message, clientID);
+                        _ioHandler.HandleMessage(message, clientEndPoint, clientID);
+                    }                                    
                 }
             }
             catch (Exception e)
             {
                 Console.WriteLine($"Error! Server Crashed due to: {e.Message}");
+                _listener.Close();
             }
+        }
+
+        private bool IsNewClient(ref IPEndPoint clientEndPoint)
+        {
+            foreach (IPEndPoint endPoint in _all_clients.Values)
+            {
+                if (endPoint.Equals(clientEndPoint)) return false;
+            }
+            return true;
+        }
+
+        private string GetClientID(byte[] recievedBytes)
+        {
+            string username = Encoding.UTF8.GetString(recievedBytes);
+            return username;
         }
     }
 }

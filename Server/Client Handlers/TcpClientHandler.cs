@@ -1,35 +1,36 @@
-﻿using Server.Servers;
+﻿using Server.Interfaces;
+using Server.Servers;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
 namespace Server.Handlers
 {
-    internal class ClientHandler
+    internal class TcpClientHandler : IClientHandler<TcpClient>
     {
-        public static string GetClientID(TcpClient client)
+        public string GetClientID(ref TcpClient client)
         {
+            byte[] buffer = new byte[4096];
             NetworkStream stream = client.GetStream();
-            byte[] buffer = new byte[client.ReceiveBufferSize];
 
             int totalRead = stream.Read(buffer, 0, buffer.Length);
             string username = Encoding.UTF8.GetString(buffer, 0, totalRead);           
             return username;
         }
 
-        public static IPAddress GetClientIP(string user)
+        public IPAddress GetClientIP(string user)
         {
             IPEndPoint endPoint = TcpServer._all_clients[user].Client.RemoteEndPoint as IPEndPoint;
             return endPoint.Address;
         }
 
-        public static int GetClientPortNum(string user)
+        public int GetClientPortNum(string user)
         {
             IPEndPoint endPoint = TcpServer._all_clients[user].Client.RemoteEndPoint as IPEndPoint;
             return endPoint.Port;
         }
 
-        public static void AddClient(string username, TcpClient client)
+        public void AddClient(string username, TcpClient client)
         {
             if (TcpServer._all_clients.ContainsKey(username))
             {
@@ -41,7 +42,7 @@ namespace Server.Handlers
             Console.WriteLine($"[SERVER] New User {username} logged in...\n");
         }
 
-        public static void SendToClient(TcpClient client, string msg)
+        public void SendToClient(TcpClient client, string msg)
         {
             NetworkStream stream = client.GetStream();
             byte[] buffer = Encoding.UTF8.GetBytes(msg);

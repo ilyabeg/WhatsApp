@@ -6,7 +6,10 @@ namespace Server
     {
         static void Main(string[] args)
         {
-            TcpServer server = new TcpServer();
+            //TcpServer server = new TcpServer();
+            //server.Run();
+
+            UdpServer server = new UdpServer();
             server.Run();
         }
     }

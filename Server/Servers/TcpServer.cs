@@ -1,4 +1,5 @@
 ﻿using Server.Handlers;
+using Server.InputHandlers;
 using Server.Interfaces;
 using System.Collections.Concurrent;
 using System.Net;
@@ -12,7 +13,10 @@ namespace Server.Servers
         private TcpListener _listener;
         public static ConcurrentDictionary<string, TcpClient> _all_clients; // connected clients by their id
         private readonly int _listeningPortNumber = 13000;
-        private readonly IPAddress _localhostIP = IPAddress.Parse("127.0.0.1");        
+        private readonly IPAddress _localhostIP = IPAddress.Parse("127.0.0.1");   
+        
+        private TcpIOHandler _ioHandler;
+        private TcpClientHandler _clientHandler;
 
         public TcpServer()
         {
@@ -23,6 +27,8 @@ namespace Server.Servers
         {
             _listener = new TcpListener(_localhostIP, _listeningPortNumber);
             _all_clients = new ConcurrentDictionary<string, TcpClient>();
+            _ioHandler = new TcpIOHandler();
+            _clientHandler = new TcpClientHandler();
 
             Console.WriteLine("[SERVER] Server successfuly initialized.\n");
             _listener.Start();
@@ -47,9 +53,9 @@ namespace Server.Servers
 
         private void ListenToClient(TcpClient client)
         {
-            string clientID = ClientHandler.GetClientID(client); // first input from client (username)
-            ClientHandler.AddClient(clientID, client);
-            DisplayConnectedClients(client);
+            string clientID = _clientHandler.GetClientID(ref client); // first input from client (username)
+            _clientHandler.AddClient(clientID, client);
+            _ioHandler.DisplayConnectedClients(client);
 
             NetworkStream stream = client.GetStream();
             byte[] buffer = new byte[client.ReceiveBufferSize];
@@ -60,12 +66,12 @@ namespace Server.Servers
                 while ((totalRead = stream.Read(buffer, 0, buffer.Length)) != 0)
                 {
                     string recievedMessage = Encoding.UTF8.GetString(buffer, 0, totalRead);
-                    InputHandler.PrintMessageDetails(recievedMessage, clientID); // echo message
+                    _ioHandler.PrintMessageDetails(recievedMessage, clientID); // echo message
 
-                    InputHandler.ProcessMessage(recievedMessage, client, clientID);
+                    _ioHandler.HandleMessage(recievedMessage, client, clientID);
                 }
             }
-            catch (IOException ex)
+            catch (IOException)
             {
                 Console.WriteLine("[SERVER ERROR!] Client Disconnected.");
                 _all_clients.Remove(clientID, out _);
@@ -75,21 +81,6 @@ namespace Server.Servers
             {
                 Console.WriteLine($"[SERVER ERROR!] Server crashed due to: {ex.Message}");
             }
-        }        
-
-        private void DisplayConnectedClients(TcpClient client)
-        {
-            StringBuilder output = new StringBuilder("[SERVER] Connected users:");
-
-            foreach (string username in _all_clients.Keys)
-            {
-                IPAddress userIP = ClientHandler.GetClientIP(username);
-                int userPort = ClientHandler.GetClientPortNum(username);
-                output.Append($"\n\t- {username} [{userIP} : {userPort}]");
-            }
-            output.Append("\n");
-
-            ClientHandler.SendToClient(client, output.ToString());
         }               
     }
 }
