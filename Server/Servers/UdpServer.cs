@@ -1,6 +1,8 @@
-﻿using Server.Client_Handlers;
+﻿using Server.Builders;
+using Server.Client_Handlers;
 using Server.InputHandlers;
 using Server.Interfaces;
+using Server.Objects;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
@@ -16,6 +18,8 @@ namespace Server.Servers
 
         private UdpIOHandler _ioHandler;
         private UdpClientHandler _clientHandler;
+
+        private List<GroupChat> _group_chats = BuildGroupChats();
 
         public UdpServer()
         {
@@ -80,6 +84,32 @@ namespace Server.Servers
         {
             string username = Encoding.UTF8.GetString(recievedBytes);
             return username;
+        }
+
+        private List<GroupChat> BuildGroupChats()
+        {
+            GroupChatBuilder builder = new GroupChatBuilder();
+            List<GroupChat> lst = new List<GroupChat>();
+
+            builder.NewGroup()
+                .SetName("Group Chat 1")
+                .SetPort(15000)
+                .SetPrivacy(false);
+            lst.Add(builder.Build());
+
+            builder.NewGroup()
+                .SetName("Group Chat 2")
+                .SetPort(16000)
+                .SetPrivacy(false);
+            lst.Add(builder.Build());
+
+            builder.NewGroup()
+                .SetName("Group Chat 3")
+                .SetPort(17000)
+                .SetPrivacy(true);
+            lst.Add(builder.Build());
+
+            return lst;
         }
     }
 }
