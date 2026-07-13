@@ -10,7 +10,7 @@ namespace Server.InputHandlers
 {
     internal class UdpIOHandler : IIOHandler<IPEndPoint>
     {
-        private UdpClientHandler _clientHandler = new UdpClientHandler();
+        private readonly UdpClientHandler _clientHandler = new UdpClientHandler();
 
         public void HandleMessage(string msg, IPEndPoint client, string sender)
         {

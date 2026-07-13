@@ -1,4 +1,5 @@
-﻿using Server.Interfaces;
+﻿using Server.InputHandlers;
+using Server.Interfaces;
 using Server.Servers;
 using System.Net;
 using System.Text;
@@ -7,6 +8,30 @@ namespace Server.Client_Handlers
 {
     internal class UdpClientHandler : IClientHandler<IPEndPoint>
     {
+        private readonly UdpIOHandler _handler = new UdpIOHandler();
+
+        public void HandleNewClient(IPEndPoint clientEndPoint, byte[] recievedBytes)
+        {
+            string clientID = Encoding.UTF8.GetString(recievedBytes);
+            AddClient(clientID, clientEndPoint);
+            _handler.DisplayOptions(clientEndPoint);
+        }
+
+        public void HandleExistingClient(IPEndPoint clientEndPoint, string message)
+        {
+            string clientID = GetClientID(ref clientEndPoint);
+            _handler.PrintMessageDetails(message, clientID);
+
+            if (message.Equals("join", StringComparison.OrdinalIgnoreCase))
+                _handler.DisplayGroupChats(clientEndPoint);
+
+            else if (message.Equals("chat", StringComparison.OrdinalIgnoreCase))
+                _handler.DisplayConnectedClients(clientEndPoint);
+
+            else
+                _handler.HandleMessage(message, clientEndPoint, clientID);
+        }
+
         public string GetClientID(ref IPEndPoint clientEndPoint)
         {               
             foreach (string username in UdpServer._all_clients.Keys)

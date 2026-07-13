@@ -16,7 +16,6 @@ namespace Server.Servers
         public static ConcurrentDictionary<string, IPEndPoint> _all_clients; // connected clients by their id
         private readonly int _listeningPortNumber = 14000;
 
-        private static UdpIOHandler _ioHandler;
         private UdpClientHandler _clientHandler;
 
         public static List<GroupChat> _group_chats { get; private set; }
@@ -31,7 +30,6 @@ namespace Server.Servers
         {
             _all_clients = new ConcurrentDictionary<string, IPEndPoint>();
             _listener = new UdpClient(_listeningPortNumber);
-            _ioHandler = new UdpIOHandler();
             _clientHandler = new UdpClientHandler();
             _group_chats = BuildGroupChats();
 
@@ -49,29 +47,11 @@ namespace Server.Servers
                     byte[] receiveBytes = _listener.Receive(ref clientEndPoint);
                     string message = Encoding.UTF8.GetString(receiveBytes).Trim();
 
-                    string clientID;
-
                     // check if new datapacket belongs to a new user
                     if (IsNewClient(ref clientEndPoint))
-                    {
-                        clientID = GetClientID(receiveBytes);
-                        _clientHandler.AddClient(clientID, clientEndPoint);
-                        _ioHandler.DisplayOptions(clientEndPoint);
-                    }
+                        _clientHandler.HandleNewClient(clientEndPoint, receiveBytes);
                     else
-                    {           
-                        clientID = _clientHandler.GetClientID(ref clientEndPoint);
-                        _ioHandler.PrintMessageDetails(message, clientID);
-
-                        if (message.Equals("join", StringComparison.OrdinalIgnoreCase))
-                            _ioHandler.DisplayGroupChats(clientEndPoint);
-
-                        else if (message.Equals("chat", StringComparison.OrdinalIgnoreCase))
-                            _ioHandler.DisplayConnectedClients(clientEndPoint);
-
-                        else
-                            _ioHandler.HandleMessage(message, clientEndPoint, clientID);
-                    }                                    
+                        _clientHandler.HandleExistingClient(clientEndPoint, message);                                 
                 }
             }
             catch (Exception e)
@@ -88,12 +68,6 @@ namespace Server.Servers
                 if (endPoint.Equals(clientEndPoint)) return false;
             }
             return true;
-        }
-
-        private string GetClientID(byte[] recievedBytes)
-        {
-            string username = Encoding.UTF8.GetString(recievedBytes);
-            return username;
         }
 
         private List<GroupChat> BuildGroupChats()
