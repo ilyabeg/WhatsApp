@@ -17,7 +17,6 @@ namespace Client.Clients
         public ClientUDP()
         {
             _client = new UdpClient();
-            _client.Connect(_localhostIP, _serverPortNumber); // save server adress in memory
             _buffer = new byte[_bufferSize];
             _username = GetUserName(_username);
 
@@ -37,13 +36,17 @@ namespace Client.Clients
 
         public void Start()
         {
-            Console.WriteLine("To Start chatting type: '@user' and write a message:");
+            Console.WriteLine("NOTE: Type 'CLEAR' to clear the screen at any time");
             Task.Run(Read); // run read input task in the background 
 
             while (true)
             {
-                string message = Console.ReadLine();
-                Send(message);
+                string message = Console.ReadLine().Trim();
+
+                if (message.Equals("CLEAR", StringComparison.OrdinalIgnoreCase)) 
+                    Console.Clear();
+                else
+                    Send(message);
             }            
         }
 
@@ -75,7 +78,7 @@ namespace Client.Clients
         private void Send(string message)
         {
             _buffer = Encoding.UTF8.GetBytes(message);
-            _client.Send(_buffer, _buffer.Length);
+            _client.Send(_buffer, _buffer.Length, _localhostIP, _serverPortNumber);
         }
     }
 }

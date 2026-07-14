@@ -28,7 +28,10 @@ namespace Server.Client_Handlers
             string clientID = GetClientID(ref clientEP);
             _outputHandler.PrintMessageDetails(message, clientEP, clientID);
 
-            if (message.Equals("join", StringComparison.OrdinalIgnoreCase))
+            if (message.Equals("options", StringComparison.OrdinalIgnoreCase))
+                _outputHandler.DisplayOptions(clientEP);
+
+            else if (message.Equals("join", StringComparison.OrdinalIgnoreCase))
                 _outputHandler.DisplayGroupChats(clientEP);
 
             else if (message.Equals("chat", StringComparison.OrdinalIgnoreCase))

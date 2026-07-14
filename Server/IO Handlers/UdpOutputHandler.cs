@@ -8,8 +8,9 @@ namespace Server.IO_Handlers
     internal class UdpOutputHandler
     {
         public void DisplayConnectedClients(IPEndPoint clientEP)
-        {
-            StringBuilder output = new StringBuilder("[SERVER] Connected users:");
+        {            
+            StringBuilder output = new StringBuilder("To Start chatting type: '@user' and write a message:\n");
+            output.Append("[SERVER] Connected users:");
 
             foreach (string username in UdpServer._all_clients.Keys)
             {
@@ -24,8 +25,9 @@ namespace Server.IO_Handlers
         public void DisplayOptions(IPEndPoint clientEP)
         {
             StringBuilder output = new StringBuilder("[SERVER] Options:");
-            output.Append($"\n\t- CHAT: Select a Chat to chat with users.");
-            output.Append($"\n\t- JOIN: Select a GroupChat to chat with users in a group.\n");
+            output.Append($"\n\t- OPTIONS: To show options menu");
+            output.Append($"\n\t- CHAT: Select a Chat to chat with users");
+            output.Append($"\n\t- JOIN: Select a GroupChat to chat with users in a group\n");
             SendMessage(clientEP, output.ToString());
         }
 
@@ -33,7 +35,7 @@ namespace Server.IO_Handlers
         {
             StringBuilder output = new StringBuilder("[SERVER] To Chat in a group you must join a group first (type: join @'GROUP NAME') ...");
             output.Append("\nAvailable GroupChats:");
-            foreach (GroupChat group in UdpServer._group_chats)
+            foreach (GroupChat group in UdpServer._group_chats.Values)
             {
                 output.Append($"\n\t- {group.Name} ({((!group.IsPrivate) ? "Public" : "Private")})");
             }
@@ -46,7 +48,7 @@ namespace Server.IO_Handlers
             if (msg == null || msg.IsWhiteSpace()) return;
             IPAddress clientIP = clientEP.Address;
             int clientPort = clientEP.Port;
-            Console.WriteLine($"[SERVER] Recieved: '{msg}' from {clientID} [{clientIP} : {clientPort}].");
+            Console.WriteLine($"[SERVER] Recieved: '{msg}' from {clientID} [{clientIP} : {clientPort}]");
         }
 
         public void SendInvalidMessage(IPEndPoint clientEP)

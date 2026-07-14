@@ -15,11 +15,8 @@ namespace Server.Servers
         public static UdpClient _listener { get; private set; }
         public static ConcurrentDictionary<string, IPEndPoint> _all_clients; // connected clients by their id
         private readonly int _listeningPortNumber = 14000;
-
         private UdpClientHandler _clientHandler;
-
-        public static List<GroupChat> _group_chats { get; private set; }
-
+        public static ConcurrentDictionary<string, GroupChat> _group_chats { get; private set; }
 
         public UdpServer()
         {
@@ -35,7 +32,7 @@ namespace Server.Servers
             UdpInputHandler inputHandler = new UdpInputHandler(outputHandler);
             _clientHandler = new UdpClientHandler(outputHandler, inputHandler);
 
-            _group_chats = BuildGroupChats();
+            InitGroups();
 
             Console.WriteLine("[SERVER] Server successfuly initialized.\n");
         }
@@ -43,13 +40,12 @@ namespace Server.Servers
         public void Run()
         {
             IPEndPoint clientEndPoint = new IPEndPoint(IPAddress.Any, 0);
-
             try
             {
                 while (true)
                 {
                     byte[] receiveBytes = _listener.Receive(ref clientEndPoint);
-                    string message = Encoding.UTF8.GetString(receiveBytes).Trim();
+                    string message = Encoding.UTF8.GetString(receiveBytes);
 
                     // check if new datapacket belongs to a new user
                     if (IsNewClient(ref clientEndPoint))
@@ -74,33 +70,50 @@ namespace Server.Servers
             return true;
         }
 
-        private List<GroupChat> BuildGroupChats()
+        private void InitGroups()
         {
+            _group_chats = BuildGroupChats();
+            foreach (GroupChat group in _group_chats.Values)
+            {
+                group.Start();
+                Console.WriteLine($"Group chat {group.Name} listening on ep -> {group.EndPoint} ...");
+            }
+        }
+
+        private ConcurrentDictionary<string, GroupChat> BuildGroupChats()
+        {
+            GroupChat group;
             GroupChatBuilder builder = new GroupChatBuilder();
-            List<GroupChat> lst = new List<GroupChat>();
+            ConcurrentDictionary<string, GroupChat> groups = new ConcurrentDictionary<string, GroupChat>();
 
             builder.NewGroup()                
                 .SetConfig()
-                .SetPort(15000)
-                .SetName("Group Chat 1")                
+                .SetEndPoint(15000, IPAddress.Any)
+                .SetName("GroupChat1")                
                 .SetPrivacy(false);
-            lst.Add(builder.Build());
+
+            group = builder.Build();
+            groups.TryAdd(group.Name, group);
 
             builder.NewGroup()
                 .SetConfig()
-                .SetPort(16000)
-                .SetName("Group Chat 2")
+                .SetEndPoint(16000, IPAddress.Any)
+                .SetName("GroupChat2")
                 .SetPrivacy(false);
-            lst.Add(builder.Build());
+
+            group = builder.Build();
+            groups.TryAdd(group.Name, group);
 
             builder.NewGroup()
                 .SetConfig()
-                .SetPort(17000)
-                .SetName("Group Chat 3")                
+                .SetEndPoint(17000, IPAddress.Any)
+                .SetName("GroupChat3")                
                 .SetPrivacy(true);
-            lst.Add(builder.Build());
 
-            return lst;
+            group = builder.Build();
+            groups.TryAdd(group.Name, group);
+
+            return groups;
         }
     }
 }
