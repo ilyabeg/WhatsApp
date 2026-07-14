@@ -1,5 +1,5 @@
-﻿using Server.InputHandlers;
-using Server.Interfaces;
+﻿using Server.Interfaces;
+using Server.IO_Handlers;
 using Server.Servers;
 using System.Net;
 using System.Text;
@@ -8,38 +8,44 @@ namespace Server.Client_Handlers
 {
     internal class UdpClientHandler : IClientHandler<IPEndPoint>
     {
-        private readonly UdpIOHandler _handler = new UdpIOHandler();
+        UdpOutputHandler _outputHandler;
+        UdpInputHandler _inputHandler;
+        public UdpClientHandler(UdpOutputHandler o, UdpInputHandler i)
+        {
+            _outputHandler = o;
+            _inputHandler = i;
+        }
 
-        public void HandleNewClient(IPEndPoint clientEndPoint, byte[] recievedBytes)
+        public void HandleNewClient(IPEndPoint clientEP, byte[] recievedBytes)
         {
             string clientID = Encoding.UTF8.GetString(recievedBytes);
-            AddClient(clientID, clientEndPoint);
-            _handler.DisplayOptions(clientEndPoint);
+            AddClient(clientID, clientEP);
+            _outputHandler.DisplayOptions(clientEP);
         }
 
-        public void HandleExistingClient(IPEndPoint clientEndPoint, string message)
+        public void HandleExistingClient(IPEndPoint clientEP, string message)
         {
-            string clientID = GetClientID(ref clientEndPoint);
-            _handler.PrintMessageDetails(message, clientID);
+            string clientID = GetClientID(ref clientEP);
+            _outputHandler.PrintMessageDetails(message, clientEP, clientID);
 
             if (message.Equals("join", StringComparison.OrdinalIgnoreCase))
-                _handler.DisplayGroupChats(clientEndPoint);
+                _outputHandler.DisplayGroupChats(clientEP);
 
             else if (message.Equals("chat", StringComparison.OrdinalIgnoreCase))
-                _handler.DisplayConnectedClients(clientEndPoint);
+                _outputHandler.DisplayConnectedClients(clientEP);
 
             else if (message.StartsWith("join", StringComparison.OrdinalIgnoreCase))
-                _handler.JoinGroupChat(message, clientEndPoint);
+                _inputHandler.JoinGroupChat(message, clientEP);
 
             else
-                _handler.HandleMessage(message, clientEndPoint, clientID);
+                _inputHandler.HandleMessage(message, clientEP, clientID);
         }
 
-        public string GetClientID(ref IPEndPoint clientEndPoint)
+        public string GetClientID(ref IPEndPoint clientEP)
         {               
             foreach (string username in UdpServer._all_clients.Keys)
             {
-                if (UdpServer._all_clients[username].Equals(clientEndPoint))
+                if (UdpServer._all_clients[username].Equals(clientEP))
                     return username;
             }
             return null;
@@ -55,7 +61,7 @@ namespace Server.Client_Handlers
             return UdpServer._all_clients[user].Port;
         }
 
-        public void AddClient(string username, IPEndPoint client)
+        public void AddClient(string username, IPEndPoint clientEP)
         {
             if (UdpServer._all_clients.ContainsKey(username))
             {
@@ -63,14 +69,8 @@ namespace Server.Client_Handlers
                 string hash = username.GetHashCode().ToString();
                 username += hash.Substring(hash.Length - 4);
             }
-            UdpServer._all_clients.TryAdd(username, client);
+            UdpServer._all_clients.TryAdd(username, clientEP);
             Console.WriteLine($"[SERVER] New User {username} logged in...\n");
-        }
-
-        public void SendToClient(IPEndPoint clientEndPoint, string message)
-        {
-            byte[] buffer = Encoding.UTF8.GetBytes(message);
-            UdpServer._listener.Send(buffer, buffer.Length, clientEndPoint);
-        }
+        }        
     }
 }

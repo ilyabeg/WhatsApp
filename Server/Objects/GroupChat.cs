@@ -14,8 +14,7 @@ namespace Server.Objects
 
         public void RunGroup()
         {
-            IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
-            IPEndPoint groupEP = new IPEndPoint(IPAddress.Any, PortNumber);
+            IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);               
 
             try
             {
@@ -24,7 +23,8 @@ namespace Server.Objects
                     byte[] receiveBytes = GroupListener.Receive(ref remoteEndPoint);
                     string message = Encoding.UTF8.GetString(receiveBytes);
 
-                    GroupListener.Send(receiveBytes, receiveBytes.Length, groupEP);
+                    // send evry incoming message to all group members
+                    GroupListener.Send(receiveBytes, receiveBytes.Length, remoteEndPoint);
                 }
             }
             catch (Exception e)

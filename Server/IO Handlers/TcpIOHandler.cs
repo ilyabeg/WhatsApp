@@ -8,7 +8,7 @@ using System.Text;
 
 namespace Server.InputHandlers
 {
-    internal class TcpIOHandler : IIOHandler<TcpClient>
+    internal class TcpIOHandler
     {
         private TcpClientHandler _clientHandler = new TcpClientHandler();
 

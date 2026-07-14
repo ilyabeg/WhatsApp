@@ -1,7 +1,7 @@
 ﻿using Server.Builders;
 using Server.Client_Handlers;
-using Server.InputHandlers;
 using Server.Interfaces;
+using Server.IO_Handlers;
 using Server.Objects;
 using System.Collections.Concurrent;
 using System.Net;
@@ -30,7 +30,11 @@ namespace Server.Servers
         {
             _all_clients = new ConcurrentDictionary<string, IPEndPoint>();
             _listener = new UdpClient(_listeningPortNumber);
-            _clientHandler = new UdpClientHandler();
+
+            UdpOutputHandler outputHandler = new UdpOutputHandler();
+            UdpInputHandler inputHandler = new UdpInputHandler(outputHandler);
+            _clientHandler = new UdpClientHandler(outputHandler, inputHandler);
+
             _group_chats = BuildGroupChats();
 
             Console.WriteLine("[SERVER] Server successfuly initialized.\n");
@@ -75,21 +79,24 @@ namespace Server.Servers
             GroupChatBuilder builder = new GroupChatBuilder();
             List<GroupChat> lst = new List<GroupChat>();
 
-            builder.NewGroup()
-                .SetName("Group Chat 1")
+            builder.NewGroup()                
+                .SetConfig()
                 .SetPort(15000)
+                .SetName("Group Chat 1")                
                 .SetPrivacy(false);
             lst.Add(builder.Build());
 
             builder.NewGroup()
-                .SetName("Group Chat 2")
+                .SetConfig()
                 .SetPort(16000)
+                .SetName("Group Chat 2")
                 .SetPrivacy(false);
             lst.Add(builder.Build());
 
             builder.NewGroup()
-                .SetName("Group Chat 3")
+                .SetConfig()
                 .SetPort(17000)
+                .SetName("Group Chat 3")                
                 .SetPrivacy(true);
             lst.Add(builder.Build());
 
