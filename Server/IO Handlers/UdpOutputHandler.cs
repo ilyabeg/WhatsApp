@@ -14,9 +14,7 @@ namespace Server.IO_Handlers
 
             foreach (string username in UdpServer._all_clients.Keys)
             {
-                IPAddress userIP = UdpServer._all_clients[username].Address;
-                int userPort = UdpServer._all_clients[username].Port;
-                output.Append($"\n\t- {username} [{userIP} : {userPort}]");
+                output.Append($"\n\t- {username}");
             }
             output.Append("\n");
             SendMessage(clientEP, output.ToString());
@@ -27,7 +25,8 @@ namespace Server.IO_Handlers
             StringBuilder output = new StringBuilder("[SERVER] Options:");
             output.Append($"\n\t- OPTIONS: To show options menu");
             output.Append($"\n\t- CHAT: Select a Chat to chat with users");
-            output.Append($"\n\t- JOIN: Select a GroupChat to chat with users in a group\n");
+            output.Append($"\n\t- JOIN: Select a GroupChat to chat with users in a group");
+            output.Append($"\n\t- To Broadcast type '@all' and write down a message\n");
             SendMessage(clientEP, output.ToString());
         }
 

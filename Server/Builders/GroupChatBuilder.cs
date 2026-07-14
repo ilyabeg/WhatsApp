@@ -18,7 +18,6 @@ namespace Server.Builders
 
         public IGroupChatBuilder SetConfig()
         {
-            _group.GroupListener.EnableBroadcast = true; // <- enable broadcasting to group clients
             _group.GroupListener.ExclusiveAddressUse = false; // <- non exclusive addresses
             _group.GroupListener.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);            
             return this;
@@ -27,7 +26,6 @@ namespace Server.Builders
         public IGroupChatBuilder SetEndPoint(int portNum, IPAddress ip)
         {
             _group.EndPoint = new IPEndPoint(ip, portNum);
-
             _group.GroupListener.Client.Bind(_group.EndPoint); // <- bind the group listener to the end point
             return this;
         }

@@ -63,9 +63,9 @@ namespace Server.Servers
 
         private bool IsNewClient(ref IPEndPoint clientEndPoint)
         {
-            foreach (IPEndPoint endPoint in _all_clients.Values)
+            foreach (IPEndPoint client in _all_clients.Values)
             {
-                if (endPoint.Equals(clientEndPoint)) return false;
+                if (client.Equals(clientEndPoint)) return false;
             }
             return true;
         }
@@ -76,7 +76,7 @@ namespace Server.Servers
             foreach (GroupChat group in _group_chats.Values)
             {
                 group.Start();
-                Console.WriteLine($"Group chat {group.Name} listening on ep -> {group.EndPoint} ...");
+                Console.WriteLine($"Group chat {group.Name} listening on port -> {group.EndPoint.Port} ...");
             }
         }
 

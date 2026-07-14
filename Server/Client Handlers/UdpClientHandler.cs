@@ -2,6 +2,7 @@
 using Server.IO_Handlers;
 using Server.Servers;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 
 namespace Server.Client_Handlers
@@ -25,7 +26,7 @@ namespace Server.Client_Handlers
 
         public void HandleExistingClient(IPEndPoint clientEP, string message)
         {
-            string clientID = GetClientID(ref clientEP);
+            string clientID = GetClientID(clientEP);
             _outputHandler.PrintMessageDetails(message, clientEP, clientID);
 
             if (message.Equals("options", StringComparison.OrdinalIgnoreCase))
@@ -44,27 +45,29 @@ namespace Server.Client_Handlers
                 _inputHandler.HandleMessage(message, clientEP, clientID);
         }
 
-        public string GetClientID(ref IPEndPoint clientEP)
+        public string GetClientID(IPEndPoint clientEP)
         {               
             foreach (string username in UdpServer._all_clients.Keys)
             {
                 if (UdpServer._all_clients[username].Equals(clientEP))
                     return username;
             }
-            return null;
+            throw new Exception("No Client ID Found.");
         }
 
         public IPAddress GetClientIP(string user)
         {
-            return UdpServer._all_clients[user].Address;
+            IPEndPoint ep = UdpServer._all_clients[user];
+            return ep.Address;
         }
 
         public int GetClientPortNum(string user)
         {
-            return UdpServer._all_clients[user].Port;
+            IPEndPoint ep = UdpServer._all_clients[user];
+            return ep.Port;
         }
 
-        public void AddClient(string username, IPEndPoint clientEP)
+        public void AddClient(string username, IPEndPoint newClient)
         {
             if (UdpServer._all_clients.ContainsKey(username))
             {
@@ -72,7 +75,7 @@ namespace Server.Client_Handlers
                 string hash = username.GetHashCode().ToString();
                 username += hash.Substring(hash.Length - 4);
             }
-            UdpServer._all_clients.TryAdd(username, clientEP);
+            UdpServer._all_clients.TryAdd(username, newClient);
             Console.WriteLine($"[SERVER] New User {username} logged in...\n");
         }        
     }

@@ -2,12 +2,12 @@
 using Server.IO_Handlers;
 using Server.Objects;
 using System.Net;
-using System.Text;
 
 namespace Server.Servers
 {
     internal class UdpInputHandler
     {
+        //private readonly IPAddress _broadcast_channel = IPAddress.Parse("239.1.1.1");
         UdpOutputHandler _outputHandler;
         public UdpInputHandler(UdpOutputHandler handler)
         {
@@ -25,6 +25,14 @@ namespace Server.Servers
                 recieverID = MessageProcessor.GetRecieverID(msg);
                 actualMsg = MessageProcessor.GetActualMsg(msg);
 
+                // broadcast message
+                //if (recieverID.Equals("all", StringComparison.OrdinalIgnoreCase))
+                //{
+                //    IPEndPoint reciever = new IPEndPoint(_broadcast_channel, );
+
+                //}
+
+                // private message
                 if (UdpServer._all_clients.ContainsKey(recieverID))
                 {
                     // get client's end point
@@ -33,6 +41,7 @@ namespace Server.Servers
                     return;
                 }
 
+                // group message
                 else if (UdpServer._group_chats.ContainsKey(recieverID))
                 {
                     // get group end point
@@ -56,7 +65,6 @@ namespace Server.Servers
                 {
                     if (group.Name.Equals(groupName, StringComparison.OrdinalIgnoreCase))
                     {
-                        // run group in the background and change client's port to the group's port                        
                         group.AddMember(clientEndPoint);
                         return;
                     }

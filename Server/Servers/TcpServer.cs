@@ -53,7 +53,7 @@ namespace Server.Servers
 
         private void ListenToClient(TcpClient client)
         {
-            string clientID = _clientHandler.GetClientID(ref client); // first input from client (username)
+            string clientID = _clientHandler.GetClientID(client); // first input from client (username)
             _clientHandler.AddClient(clientID, client);
             _ioHandler.DisplayConnectedClients(client);
 

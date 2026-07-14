@@ -8,9 +8,11 @@ namespace Server.Handlers
 {
     internal class TcpClientHandler : IClientHandler<TcpClient>
     {
-        public string GetClientID(ref TcpClient client)
+        private readonly int _bufferSize = 4096;
+
+        public string GetClientID(TcpClient client)
         {
-            byte[] buffer = new byte[4096];
+            byte[] buffer = new byte[_bufferSize];
             NetworkStream stream = client.GetStream();
 
             int totalRead = stream.Read(buffer, 0, buffer.Length);
