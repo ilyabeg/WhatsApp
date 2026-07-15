@@ -56,7 +56,17 @@ namespace Client.Clients
                 DataPacket packet = Write();
                 GroupChats.SendToGroupChat(packet, _client);
             });
-            _input_option.Add("NEW G", () => GroupChats.CreateNewGroup(_client));
+            _input_option.Add("NEW G", () => {
+                // create new group
+                var newGroup = GroupChats.CreateNewGroup(_client);
+
+                // broadcast the new group so all clients add it to their local memmory
+                if (newGroup.groupName != null && newGroup.groupIP != null)
+                {
+                    string newGroupBroadcast = $"$NEW_GROUP_SIGNAL$#{newGroup.groupName}#{newGroup.groupIP}";
+                    SendToMulticastGroup(newGroupBroadcast);
+                }
+            });
             _input_option.Add("JOIN G", () => GroupChats.JoinGroup(_client));
             _input_option.Add("LEAVE G", () => GroupChats.LeaveGroup(_client));
             _input_option.Add("OPTIONS", DisplayOptions);
@@ -117,17 +127,26 @@ namespace Client.Clients
         {
             try
             {
-                DataPacket recievedPacket = DataPacket.TransferData(recievedBytes);
-
-                // if the message is meant for me -> print it, else, ignore it
-                if (recievedPacket.Reciever.Equals(_username, StringComparison.OrdinalIgnoreCase) ||
-                    recievedPacket.Reciever.Equals("all", StringComparison.OrdinalIgnoreCase))
-                    PrintDataPacket(recievedPacket);
+                string str = Encoding.UTF8.GetString(recievedBytes);
+                if (str.StartsWith("$NEW_GROUP_SIGNAL$"))
+                    GroupChats.AddGroup(str);
+                else
+                    ProcessDataPacket(recievedBytes);
             }
             catch
             {
                 PrintBytes(recievedBytes);
             }
+        }
+
+        private void ProcessDataPacket(byte[] recievedBytes)
+        {
+            DataPacket recievedPacket = DataPacket.TransferData(recievedBytes);
+
+            // if the message is meant for me -> print it, else, ignore it
+            if (recievedPacket.Reciever.Equals(_username, StringComparison.OrdinalIgnoreCase) ||
+                recievedPacket.Reciever.Equals("all", StringComparison.OrdinalIgnoreCase))
+                PrintDataPacket(recievedPacket);
         }
 
         private void PrintDataPacket(DataPacket recievedPacket)

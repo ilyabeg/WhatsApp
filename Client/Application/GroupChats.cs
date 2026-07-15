@@ -12,14 +12,19 @@ namespace Client.Application
         public static ConcurrentDictionary<string, IPAddress> _groupChats { get; private set; } = new ConcurrentDictionary<string, IPAddress>();
         private static readonly int _buffer_size = 4096;
 
-        public static void CreateNewGroup(UdpClient client)
+        public static (string groupName, IPAddress groupIP) CreateNewGroup(UdpClient client)
         {
+            string name = null;
+            IPAddress ip = null;
+
             try
             {
-                string name = InputGroupName();
-                IPAddress ip = GenerateIP(name);
+                name = InputGroupName();
+                ip = GenerateIP(name);
+
                 _groupChats.TryAdd(name, ip);
                 client.JoinMulticastGroup(_groupChats[name]);
+
                 Console.WriteLine($"[SYSTEM] Group {name} successfuly created on {ip}");
                 Console.WriteLine("[SYSTEM] To chat in the group type: 'CHAT G' ...");
             }
@@ -27,6 +32,7 @@ namespace Client.Application
             {
                 Console.WriteLine($"[SYSTEM] Error! Couldn't add Group due to: {e.Message}");
             }
+            return (name, ip);
         }
 
         private static string InputGroupName()
@@ -113,6 +119,23 @@ namespace Client.Application
 
             client.DropMulticastGroup(_groupChats[name]);
             Console.WriteLine($"[SYSTEM] You have left the group {name} successfuly.");
+        }
+
+        /// <summary>
+        /// 
+        /// Gets the NEW GROUP SIGNAL and parses the group name and ip from the string to add it to the local memory
+        /// 
+        /// </summary>
+        /// <param name="str"></param>
+        public static void AddGroup(string str)
+        {
+            string[] tmp = str.Split('#');
+            string groupName = tmp[1];
+
+            if (_groupChats.ContainsKey(groupName)) return; // group exists
+
+            IPAddress groupIP = IPAddress.Parse(tmp[2]);
+            _groupChats.TryAdd(groupName, groupIP);
         }
 
         private static void DisplayGroups()
