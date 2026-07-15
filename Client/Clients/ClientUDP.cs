@@ -69,6 +69,7 @@ namespace Client.Clients
         {
             if (message.Equals("CHAT", StringComparison.OrdinalIgnoreCase))
             {
+                Console.WriteLine("To broadcast specify the destination as 'ALL' ...");
                 DataPacket packet = Write();
                 SendDataPacket(packet);
             }

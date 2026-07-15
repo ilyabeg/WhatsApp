@@ -32,7 +32,7 @@ namespace Client.Application
 
         private static string InputReciecer()
         {
-            Console.WriteLine("Please insert the destination you'd like to message (type all to BROADCAST):");
+            Console.WriteLine("Please insert the destination you'd like to message:");
             string reciever = Console.ReadLine().Trim();
             return reciever;
         }
