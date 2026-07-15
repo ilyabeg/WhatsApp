@@ -1,7 +1,9 @@
 ﻿using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
+using System.Xml.Linq;
 
 namespace Client.Application
 {
@@ -16,7 +18,7 @@ namespace Client.Application
             try
             {
                 string name = InputGroupName();
-                IPAddress ip = InputIP();
+                IPAddress ip = GenerateIP(name);
                 _groupChats.TryAdd(name, ip);
                 client.JoinMulticastGroup(_groupChats[name]);
                 Console.WriteLine($"Group {name} successfuly created on {ip}");
@@ -38,17 +40,21 @@ namespace Client.Application
             return name;
         }
 
-        private static IPAddress InputIP()
+        private static IPAddress GenerateIP(string groupName)
         {
-            Console.WriteLine("Enter Group Chat IP:");
-            IPAddress ipAddress = IPAddress.Parse(Console.ReadLine().Trim());
+            using MD5 md5_hasher = MD5.Create();
 
-            foreach (IPAddress ip in _groupChats.Values)
-            {
-                if (ip.Equals(ipAddress))
-                    throw new Exception($"IP {ipAddress} already exists ...");
-            }            
-            return ipAddress;
+            // get 16 byte array of the group name hash (128 bits)
+            byte[] hash = md5_hasher.ComputeHash(Encoding.UTF8.GetBytes(groupName));
+
+            // turn 2nd octet into the number 2 in case it is 1 or 0 to prevent collision with 
+            // the ip addresses: 239.1.1.1 or 239.0.0.0
+            byte octet2 = hash[0];
+            if (octet2 <= 1)
+                octet2 = 2;
+
+            IPAddress ip = IPAddress.Parse($"{239}.{octet2}.{hash[1]}.{hash[2]}");
+            return ip;
         }
 
         public static void SendToGroupChat(DataPacket packet, UdpClient client)
