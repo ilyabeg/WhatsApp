@@ -19,6 +19,8 @@ namespace Client.Clients
         private readonly int _listening_port = 20000;
         private readonly IPEndPoint _multicast_group_ep;
 
+        private Dictionary<string, Action> _input_option;
+
         public ClientUDP()
         {
             InitClient();
@@ -38,6 +40,27 @@ namespace Client.Clients
 
             _client.Client.Bind(new IPEndPoint(IPAddress.Any, _listening_port));
             _client.JoinMulticastGroup(_multicast_group_ip);
+
+            _input_option = new Dictionary<string, Action>();
+            InitOptions();
+        }
+
+        private void InitOptions()
+        {
+            _input_option.Add("CHAT", () => {
+                Console.WriteLine("To broadcast specify the destination as 'ALL' ...");
+                DataPacket packet = Write();
+                SendDataPacket(packet);
+            });
+            _input_option.Add("CHAT G", () => {
+                DataPacket packet = Write();
+                GroupChats.SendToGroupChat(packet, _client);
+            });
+            _input_option.Add("NEW G", () => GroupChats.CreateNewGroup(_client));
+            _input_option.Add("JOIN G", () => GroupChats.JoinGroup(_client));
+            _input_option.Add("LEAVE G", () => GroupChats.LeaveGroup(_client));
+            _input_option.Add("OPTIONS", DisplayOptions);
+            _input_option.Add("CLEAR", Console.Clear);
         }
 
         private string GetUserName(string deafult)
@@ -60,39 +83,15 @@ namespace Client.Clients
 
             while (true)
             {
-                string message = Console.ReadLine().Trim();
+                string message = Console.ReadLine().Trim().ToUpper();
                 ProcessMessage(message);
             }
         }
 
         private void ProcessMessage(string message)
         {
-            if (message.Equals("CHAT", StringComparison.OrdinalIgnoreCase))
-            {
-                Console.WriteLine("To broadcast specify the destination as 'ALL' ...");
-                DataPacket packet = Write();
-                SendDataPacket(packet);
-            }
-            else if (message.Equals("CHAT G", StringComparison.OrdinalIgnoreCase))
-            {
-                DataPacket packet = Write();
-                GroupChats.SendToGroupChat(packet, _client);
-            }
-            else if (message.Equals("NEW G", StringComparison.OrdinalIgnoreCase))
-                GroupChats.CreateNewGroup(_client);
-
-            else if (message.Equals("JOIN G", StringComparison.OrdinalIgnoreCase))
-                GroupChats.JoinGroup(_client);
-
-            else if (message.Equals("LEAVE G", StringComparison.OrdinalIgnoreCase))
-                GroupChats.LeaveGroup(_client);
-
-            else if (message.Equals("OPTIONS", StringComparison.OrdinalIgnoreCase))
-                DisplayOptions();
-
-            else if (message.Equals("CLEAR", StringComparison.OrdinalIgnoreCase))
-                Console.Clear();
-
+            if (_input_option.ContainsKey(message))
+                _input_option[message].Invoke();
             else
                 Console.WriteLine("Enter valid input.");
         }
