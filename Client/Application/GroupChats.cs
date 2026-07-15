@@ -21,6 +21,7 @@ namespace Client.Application
                 _groupChats.TryAdd(name, ip);
                 client.JoinMulticastGroup(_groupChats[name]);
                 Console.WriteLine($"[SYSTEM] Group {name} successfuly created on {ip}");
+                Console.WriteLine("[SYSTEM] To chat in the group type: 'CHAT G' ...");
             }
             catch (Exception e)
             {
@@ -61,7 +62,7 @@ namespace Client.Application
             byte[] _buffer = new byte[_buffer_size];
             try
             {
-                _buffer = Encoding.UTF8.GetBytes($"[{_groupChats[packet.Reciever]}] -> ({packet.Author}): {packet.Message}");
+                _buffer = Encoding.UTF8.GetBytes($"[{packet.Reciever}] -> ({packet.Author}): {packet.Message}");
 
                 IPEndPoint endPoint = new IPEndPoint(_groupChats[packet.Reciever], _portNum);
                 client.Send(_buffer, _buffer.Length, endPoint);
@@ -86,10 +87,17 @@ namespace Client.Application
                     return;
                 }
 
-                client.JoinMulticastGroup(_groupChats[name]);
-                Console.WriteLine($"[SYSTEM] You have joined the group {name} successfuly.");
-                Console.WriteLine("[SYSTEM] To chat in the group type: 'CHAT G' ...");
-            }            
+                try
+                {
+                    client.JoinMulticastGroup(_groupChats[name]);
+                    Console.WriteLine($"[SYSTEM] You have joined the group {name} successfuly.");
+                    Console.WriteLine("[SYSTEM] To chat in the group type: 'CHAT G' ...");
+                }
+                catch
+                {
+                    Console.WriteLine($"[SYSTEM] Error! You are already a member of group {name}.");
+                }
+            }
         }
 
         public static void LeaveGroup(UdpClient client)
