@@ -79,7 +79,7 @@ namespace Client.Clients
             DisplayOptions();
 
             Task.Run(Listen); // run listen task in the background     
-            SendToMulticastGroup(_username + " is logged in...");
+            SendToMulticastGroup("[SYSTEM] " + _username + " is logged in...");
 
             while (true)
             {
@@ -93,7 +93,7 @@ namespace Client.Clients
             if (_input_option.ContainsKey(message))
                 _input_option[message].Invoke();
             else
-                Console.WriteLine("Enter valid input.");
+                Console.WriteLine("[SYSTEM] Enter valid input.");
         }
 
         private void Listen()
@@ -109,7 +109,7 @@ namespace Client.Clients
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Error! Connection to Network lost due to: {e.Message}");
+                Console.WriteLine($"[SYSTEM] Error! Connection to Network lost due to: {e.Message}");
             }
         }
 
@@ -138,7 +138,7 @@ namespace Client.Clients
         private void PrintBytes(byte[] recievedBytes)
         {
             string recievedString = Encoding.UTF8.GetString(recievedBytes);
-            Console.WriteLine($"Recieved -> {recievedString}");
+            Console.WriteLine($"[SYSTEM] Recieved -> {recievedString}");
         }
 
         private DataPacket Write()
@@ -151,7 +151,7 @@ namespace Client.Clients
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Error! Couldn't write message to remote user due to {e.Message}");
+                Console.WriteLine($"[SYSTEM] Error! Couldn't write message to remote user due to {e.Message}");
             }
             return null;
         }

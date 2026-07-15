@@ -32,18 +32,18 @@ namespace Client.Application
 
         private static string InputReciecer()
         {
-            Console.WriteLine("Please insert the destination you'd like to message:");
+            Console.WriteLine("[SYSTEM] Please insert the destination you'd like to message:");
             string reciever = Console.ReadLine().Trim();
             return reciever;
         }
 
         private static string InputMessage()
         {
-            Console.WriteLine("Please insert the message you'd like to send:");
+            Console.WriteLine("[SYSTEM] Please insert the message you'd like to send:");
             string message = Console.ReadLine().Trim();
 
             if (string.IsNullOrWhiteSpace(message))
-                throw new Exception("Invalid message input.");
+                throw new Exception("[SYSTEM] Invalid message input.");
 
             return message;
         }

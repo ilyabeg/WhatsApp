@@ -3,7 +3,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
-using System.Xml.Linq;
 
 namespace Client.Application
 {
@@ -21,17 +20,17 @@ namespace Client.Application
                 IPAddress ip = GenerateIP(name);
                 _groupChats.TryAdd(name, ip);
                 client.JoinMulticastGroup(_groupChats[name]);
-                Console.WriteLine($"Group {name} successfuly created on {ip}");
+                Console.WriteLine($"[SYSTEM] Group {name} successfuly created on {ip}");
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Error! Couldn't add Group due to: {e.Message}");
+                Console.WriteLine($"[SYSTEM] Error! Couldn't add Group due to: {e.Message}");
             }
         }
 
         private static string InputGroupName()
         {
-            Console.WriteLine("Enter Group Chat Name:");
+            Console.WriteLine("[SYSTEM] Enter Group Chat Name:");
             string name = Console.ReadLine().Trim();
 
             if (_groupChats.ContainsKey(name))
@@ -69,7 +68,7 @@ namespace Client.Application
             }
             catch
             {
-                Console.WriteLine($"Error! No Group chat {packet.Reciever} found...");
+                Console.WriteLine($"[SYSTEM] Error! No Group chat {packet.Reciever} found...");
             }
         }
 
@@ -78,39 +77,39 @@ namespace Client.Application
             DisplayGroups();
             if (_groupChats.Count > 0)
             {
-                Console.WriteLine("Write the name of the group you'd like to join:");
+                Console.WriteLine("[SYSTEM] Write the name of the group you'd like to join:");
                 string name = Console.ReadLine().Trim();
 
                 if (!_groupChats.ContainsKey(name))
                 {
-                    Console.WriteLine($"Error! No Group chat {name} found...");
+                    Console.WriteLine($"[SYSTEM] Error! No Group chat {name} found...");
                     return;
                 }
 
                 client.JoinMulticastGroup(_groupChats[name]);
-                Console.WriteLine($"You have joined the group {name} successfuly.");
-                Console.WriteLine("To chat in the group type: 'CHAT G' ...");
+                Console.WriteLine($"[SYSTEM] You have joined the group {name} successfuly.");
+                Console.WriteLine("[SYSTEM] To chat in the group type: 'CHAT G' ...");
             }            
         }
 
         public static void LeaveGroup(UdpClient client)
         {
-            Console.WriteLine("Write the name of the group you'd like to leave:");
+            Console.WriteLine("[SYSTEM] Write the name of the group you'd like to leave:");
             string name = Console.ReadLine().Trim();
 
             if (!_groupChats.ContainsKey(name))
             {
-                Console.WriteLine($"Error! No Group chat {name} found...");
+                Console.WriteLine($"[SYSTEM] Error! No Group chat {name} found...");
                 return;
             }
 
             client.DropMulticastGroup(_groupChats[name]);
-            Console.WriteLine($"You have left the group {name} successfuly.");
+            Console.WriteLine($"[SYSTEM] You have left the group {name} successfuly.");
         }
 
         private static void DisplayGroups()
         {
-            Console.WriteLine("Available Groups:");
+            Console.WriteLine("[SYSTEM] Available Groups:");
 
             if (_groupChats.Count == 0)
                 Console.WriteLine("\t-None.\n");
