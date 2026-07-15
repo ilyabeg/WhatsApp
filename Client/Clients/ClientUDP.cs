@@ -79,7 +79,7 @@ namespace Client.Clients
             DisplayOptions();
 
             Task.Run(Listen); // run listen task in the background     
-            SendToMulticastGroup("[SYSTEM] " + _username + " is logged in...");
+            SendToMulticastGroup(_username + " is logged in...");
 
             while (true)
             {
