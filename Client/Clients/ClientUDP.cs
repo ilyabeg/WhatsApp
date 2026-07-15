@@ -1,8 +1,8 @@
 ﻿using Client.Interfaces;
-using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 
 namespace Client.Clients
 {
@@ -16,10 +16,17 @@ namespace Client.Clients
         private readonly int _listening_port = 20000;
         private readonly IPEndPoint _multicast_group_ep;
 
-        private ConcurrentDictionary<IPEndPoint, string> _users_by_endpoint; // other users mapped to their endpoint
-        private ConcurrentDictionary<string, IPEndPoint> _users_by_name;     // other users mapped to their username
-
         public ClientUDP()
+        {
+            InitClient();
+
+            _buffer = new byte[_bufferSize];
+            _username = GetUserName(_username);     
+            
+            _multicast_group_ep = new IPEndPoint(_multicast_group_ip, _listening_port);
+        }
+
+        private void InitClient()
         {
             _client = new UdpClient();
 
@@ -28,13 +35,6 @@ namespace Client.Clients
 
             _client.Client.Bind(new IPEndPoint(IPAddress.Any, _listening_port));
             _client.JoinMulticastGroup(_multicast_group_ip);
-
-            _buffer = new byte[_bufferSize];
-            _username = GetUserName(_username);            
-            _multicast_group_ep = new IPEndPoint(_multicast_group_ip, _listening_port);
-
-            _users_by_endpoint = new ConcurrentDictionary<IPEndPoint, string>();
-            _users_by_name = new ConcurrentDictionary<string, IPEndPoint>();
         }
 
         private string GetUserName(string deafult)
@@ -50,25 +50,28 @@ namespace Client.Clients
 
         public void Start()
         {
-            Console.WriteLine("To Chat type: '@user' and write down a message...");
+            Console.WriteLine("To Chat type: 'NEW' ...");
+            Console.WriteLine("To Broadcast type: 'ALL' and write a message ...");
             Console.WriteLine("NOTE: Type 'CLEAR' to clear the screen at any time\n");
 
             Task.Run(Listen); // run listen task in the background     
-            SendToMulticastGroup(_username); // send over username to all other devices
+            SendToMulticastGroup(_username + " is logged in...");
 
             while (true)
             {
                 string message = Console.ReadLine().Trim();
-
-                if (string.IsNullOrWhiteSpace(message))
-                    continue;
-
-                else if (message.Equals("CLEAR", StringComparison.OrdinalIgnoreCase))
-                    Console.Clear();
-
-                else
-                    Write(message);
+                ProcessMessage(message);
             }
+        }
+
+        private void ProcessMessage(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message) || !message.Equals("NEW", StringComparison.OrdinalIgnoreCase))
+                Console.WriteLine("Enter valid input.");
+            else if (message.Equals("CLEAR", StringComparison.OrdinalIgnoreCase))
+                Console.Clear();
+            else
+                Write(message);
         }
 
         private void Listen()
@@ -89,69 +92,52 @@ namespace Client.Clients
         }
 
         private void Read(byte[] recievedBytes, IPEndPoint remoteEP)
-        {           
-            string recieved = Encoding.UTF8.GetString(recievedBytes);
-            ProcessClient(recieved, remoteEP);    
-            
-            recieved = $"({_users_by_endpoint[remoteEP]}): {recieved}";
-            PrintMessage(recieved);
-        }
-
-        private void ProcessClient(string recieved, IPEndPoint remoteEP)
         {
-            // add to users if new client
-            if (!_users_by_endpoint.ContainsKey(remoteEP))
+            try
             {
-                _users_by_endpoint.TryAdd(remoteEP, recieved);
-                ProcessUsername(recieved, remoteEP);
+                DataPacket recievedPacket = DataPacket.TransferData(recievedBytes);
+
+                // if the message is meant for me -> print it, else, ignore it
+                if (recievedPacket.Reciever.Equals(_username, StringComparison.OrdinalIgnoreCase) ||
+                    recievedPacket.Reciever.Equals("all", StringComparison.OrdinalIgnoreCase))
+                    PrintDataPacket(recievedPacket);
+            }
+            catch
+            {
+                PrintBytes(recievedBytes);
             }
         }
 
-        private void ProcessUsername(string recieved, IPEndPoint remoteEP)
+        private void PrintDataPacket(DataPacket recievedPacket)
         {
-            if (_users_by_name.ContainsKey(recieved))
-            {
-                // add hash to make username uniqe
-                string hash = recieved.GetHashCode().ToString();
-                recieved = recieved + hash.Substring(hash.Length - 4);
-            }
-            _users_by_name.TryAdd(recieved, remoteEP);
+            Console.WriteLine($"({recievedPacket.Author}): {recievedPacket.Message}");
         }
 
-        private void PrintMessage(string message)
+        private void PrintBytes(byte[] recievedBytes)
         {
-            Console.WriteLine("Recieved -> " + message);
+            string recievedString = Encoding.UTF8.GetString(recievedBytes);
+            Console.WriteLine($"Recieved -> {recievedString}");
         }
 
         private void Write(string message)
         {
             try
             {
-                IPEndPoint remoteEP = GetRemoteEPFromMessage(ref message); // parse remote user from message
-                _buffer = Encoding.UTF8.GetBytes(message);
-                _client.Send(_buffer, _buffer.Length, remoteEP);
+                DataPacket packet = DataPacket.CreateNew();
+                packet.Author = _username;
+               
+                SendDataPacket(packet);
             }
-            catch
+            catch (Exception e)
             {
-                Console.WriteLine("Error! Couldn't write message to remote user.");
+                Console.WriteLine($"Error! Couldn't write message to remote user due to {e.Message}");
             }
         }
 
-        private IPEndPoint GetRemoteEPFromMessage(ref string actualMessage)
+        private void SendDataPacket(DataPacket packet)
         {
-            int start = actualMessage.IndexOf('@');
-            int end = actualMessage.IndexOf(' ');
-
-            if (start == -1 || end == -1 || start > end || !actualMessage.StartsWith('@')) 
-                throw new Exception();
-
-            string remoteUser = actualMessage.Substring(start + 1, end - start + 1);
-            actualMessage = actualMessage.Substring(end + 1);
-
-            if (string.IsNullOrWhiteSpace(remoteUser) || string.IsNullOrWhiteSpace(actualMessage)) 
-                throw new Exception();
-
-            return _users_by_name[remoteUser];
+            string datapacket = JsonSerializer.Serialize(packet);
+            SendToMulticastGroup(datapacket);
         }
 
         private void SendToMulticastGroup(string message)
