@@ -1,4 +1,7 @@
-﻿using Client.Interfaces;
+﻿using Client.Application;
+using Client.Interfaces;
+using System.Collections.Concurrent;
+using System.ComponentModel.DataAnnotations;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -50,9 +53,7 @@ namespace Client.Clients
 
         public void Start()
         {
-            Console.WriteLine("To Chat type: 'NEW' ...");
-            Console.WriteLine("To Broadcast type: 'ALL' and write a message ...");
-            Console.WriteLine("NOTE: Type 'CLEAR' to clear the screen at any time\n");
+            DisplayOptions();
 
             Task.Run(Listen); // run listen task in the background     
             SendToMulticastGroup(_username + " is logged in...");
@@ -66,12 +67,33 @@ namespace Client.Clients
 
         private void ProcessMessage(string message)
         {
-            if (string.IsNullOrWhiteSpace(message) || !message.Equals("NEW", StringComparison.OrdinalIgnoreCase))
-                Console.WriteLine("Enter valid input.");
+            if (message.Equals("CHAT", StringComparison.OrdinalIgnoreCase))
+            {
+                DataPacket packet = Write();
+                SendDataPacket(packet);
+            }
+            else if (message.Equals("CHAT G", StringComparison.OrdinalIgnoreCase))
+            {
+                DataPacket packet = Write();
+                GroupChats.SendToGroupChat(packet, _client);
+            }
+            else if (message.Equals("NEW G", StringComparison.OrdinalIgnoreCase))
+                GroupChats.CreateNewGroup(_client);
+
+            else if (message.Equals("JOIN G", StringComparison.OrdinalIgnoreCase))
+                GroupChats.JoinGroup(_client);
+
+            else if (message.Equals("LEAVE G", StringComparison.OrdinalIgnoreCase))
+                GroupChats.LeaveGroup(_client);
+
+            else if (message.Equals("OPTIONS", StringComparison.OrdinalIgnoreCase))
+                DisplayOptions();
+
             else if (message.Equals("CLEAR", StringComparison.OrdinalIgnoreCase))
                 Console.Clear();
+
             else
-                Write(message);
+                Console.WriteLine("Enter valid input.");
         }
 
         private void Listen()
@@ -119,19 +141,19 @@ namespace Client.Clients
             Console.WriteLine($"Recieved -> {recievedString}");
         }
 
-        private void Write(string message)
+        private DataPacket Write()
         {
             try
             {
                 DataPacket packet = DataPacket.CreateNew();
-                packet.Author = _username;
-               
-                SendDataPacket(packet);
+                packet.Author = _username; 
+                return packet;
             }
             catch (Exception e)
             {
                 Console.WriteLine($"Error! Couldn't write message to remote user due to {e.Message}");
             }
+            return null;
         }
 
         private void SendDataPacket(DataPacket packet)
@@ -144,6 +166,16 @@ namespace Client.Clients
         {
             _buffer = Encoding.UTF8.GetBytes(message);
             _client.Send(_buffer, _buffer.Length, _multicast_group_ep);
+        }        
+
+        private void DisplayOptions()
+        {
+            Console.WriteLine("To Chat type: 'CHAT' ...");
+            Console.WriteLine("To Create a new Group type: 'NEW G' ...");
+            Console.WriteLine("To Join a Group type: 'JOIN G' ...");
+            Console.WriteLine("To Leave a Group type: 'LEAVE G' ...");
+            Console.WriteLine("To Display Options type: 'OPTIONS' ...");
+            Console.WriteLine("NOTE: Type 'CLEAR' to clear the screen at any time\n");
         }
     }
 }

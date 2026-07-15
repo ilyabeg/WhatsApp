@@ -3,7 +3,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 
-namespace Client
+namespace Client.Application
 {
     internal class DataPacket
     {
@@ -32,12 +32,8 @@ namespace Client
 
         private static string InputReciecer()
         {
-            Console.WriteLine("Please insert the user you'd like to message:");
+            Console.WriteLine("Please insert the destination you'd like to message (type all to BROADCAST):");
             string reciever = Console.ReadLine().Trim();
-
-            //if (!users.ContainsKey(reciever))
-            //    throw new Exception($"User {reciever} does not exist.");
-
             return reciever;
         }
 
