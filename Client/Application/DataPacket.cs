@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Net;
+﻿using System.Net;
 using System.Text;
 using System.Text.Json;
 
@@ -19,15 +18,23 @@ namespace Client.Application
 
         public static DataPacket CreateNew()
         {
-            DataPacket packet = new DataPacket();
+            try
+            {
+                DataPacket packet = new DataPacket();
 
-            string reciever = InputReciecer();
-            string message = InputMessage();
+                string reciever = InputReciecer();
+                string message = InputMessage();
 
-            packet.Reciever = reciever;
-            packet.Message = message;
+                packet.Reciever = reciever;
+                packet.Message = message;
 
-            return packet;
+                return packet;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"[SYSTEM] Error! Couldn't create data packet due to {e.Message}");
+                return null;
+            }
         }
 
         private static string InputReciecer()

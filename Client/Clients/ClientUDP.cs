@@ -1,7 +1,5 @@
 ﻿using Client.Application;
 using Client.Interfaces;
-using System.Collections.Concurrent;
-using System.ComponentModel.DataAnnotations;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -23,7 +21,8 @@ namespace Client.Clients
 
         public ClientUDP()
         {
-            InitClient();
+            InitClient();            
+            InitOptions();
 
             _buffer = new byte[_bufferSize];
             _username = GetUserName(_username);     
@@ -39,22 +38,20 @@ namespace Client.Clients
             _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
             _client.Client.Bind(new IPEndPoint(IPAddress.Any, _listening_port));
-            _client.JoinMulticastGroup(_multicast_group_ip);
-
-            _input_option = new Dictionary<string, Action>();
-            InitOptions();
+            _client.JoinMulticastGroup(_multicast_group_ip);            
         }
 
-        private void InitOptions()
+        public void InitOptions()
         {
+            _input_option = new Dictionary<string, Action>();
             _input_option.Add("CHAT", () => {
                 Console.WriteLine("To broadcast specify the destination as 'ALL' ...");
                 DataPacket packet = Write();
-                SendDataPacket(packet);
+                if (packet != null) SendDataPacket(packet);
             });
             _input_option.Add("CHAT G", () => {
                 DataPacket packet = Write();
-                GroupChats.SendToGroupChat(packet, _client);
+                if (packet != null) GroupChats.SendToGroupChat(packet, _client);
             });
             _input_option.Add("NEW G", () => {
                 // create new group
@@ -69,7 +66,7 @@ namespace Client.Clients
             });
             _input_option.Add("JOIN G", () => GroupChats.JoinGroup(_client));
             _input_option.Add("LEAVE G", () => GroupChats.LeaveGroup(_client));
-            _input_option.Add("OPTIONS", DisplayOptions);
+            _input_option.Add("OPTIONS", Printer.PrintOptions);
             _input_option.Add("CLEAR", Console.Clear);
         }
 
@@ -86,7 +83,7 @@ namespace Client.Clients
 
         public void Start()
         {
-            DisplayOptions();
+            Printer.PrintOptions();
 
             Task.Run(Listen); // run listen task in the background     
             SendToMulticastGroup(_username + " is logged in...");
@@ -98,7 +95,7 @@ namespace Client.Clients
             }
         }
 
-        private void ProcessMessage(string message)
+        public void ProcessMessage(string message)
         {
             if (_input_option.ContainsKey(message))
                 _input_option[message].Invoke();
@@ -135,7 +132,7 @@ namespace Client.Clients
             }
             catch
             {
-                PrintBytes(recievedBytes);
+                Printer.PrintBytes(recievedBytes);
             }
         }
 
@@ -146,18 +143,7 @@ namespace Client.Clients
             // if the message is meant for me -> print it, else, ignore it
             if (recievedPacket.Reciever.Equals(_username, StringComparison.OrdinalIgnoreCase) ||
                 recievedPacket.Reciever.Equals("all", StringComparison.OrdinalIgnoreCase))
-                PrintDataPacket(recievedPacket);
-        }
-
-        private void PrintDataPacket(DataPacket recievedPacket)
-        {
-            Console.WriteLine($"({recievedPacket.Author}): {recievedPacket.Message}");
-        }
-
-        private void PrintBytes(byte[] recievedBytes)
-        {
-            string recievedString = Encoding.UTF8.GetString(recievedBytes);
-            Console.WriteLine($"[SYSTEM] Recieved -> {recievedString}");
+                Printer.PrintDataPacket(recievedPacket);
         }
 
         private DataPacket Write()
@@ -170,7 +156,7 @@ namespace Client.Clients
             }
             catch (Exception e)
             {
-                Console.WriteLine($"[SYSTEM] Error! Couldn't write message to remote user due to {e.Message}");
+                Console.WriteLine($"[SYSTEM] Error! Couldn't write message due to {e.Message}");
             }
             return null;
         }
@@ -186,15 +172,5 @@ namespace Client.Clients
             _buffer = Encoding.UTF8.GetBytes(message);
             _client.Send(_buffer, _buffer.Length, _multicast_group_ep);
         }        
-
-        private void DisplayOptions()
-        {
-            Console.WriteLine("To Chat type: 'CHAT' ...");
-            Console.WriteLine("To Create a new Group type: 'NEW G' ...");
-            Console.WriteLine("To Join a Group type: 'JOIN G' ...");
-            Console.WriteLine("To Leave a Group type: 'LEAVE G' ...");
-            Console.WriteLine("To Display Options type: 'OPTIONS' ...");
-            Console.WriteLine("NOTE: Type 'CLEAR' to clear the screen at any time\n");
-        }
     }
 }
