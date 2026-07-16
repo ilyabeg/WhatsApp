@@ -1,5 +1,4 @@
-﻿using Client.Interfaces;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Text;
 

@@ -60,7 +60,7 @@ namespace Client.Clients
                 if (newGroup.groupName != null && newGroup.groupIP != null)
                 {
                     string newGroupBroadcast = $"$NEW_GROUP_SIGNAL$#{newGroup.groupName}#{newGroup.groupIP}";
-                    SendToMulticastGroup(newGroupBroadcast);
+                    MulticastGroup.SendToMulticastGroup(newGroupBroadcast, _client);
                 }
             });
             _input_option.Add("JOIN G", () => GroupChats.JoinGroup(_client));

@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Net;
+using System.Text;
 
 namespace Client.Application
 {
@@ -15,6 +16,11 @@ namespace Client.Application
             Console.WriteLine($"[SYSTEM] Recieved -> {recievedString}");
         }
 
+        public static void PrintMessage(string message)
+        {
+            Console.WriteLine(message);
+        }
+
         public static void PrintOptions()
         {
             Console.WriteLine("To Chat type: 'CHAT' ...");
@@ -23,6 +29,15 @@ namespace Client.Application
             Console.WriteLine("To Leave a Group type: 'LEAVE G' ...");
             Console.WriteLine("To Display Options type: 'OPTIONS' ...");
             Console.WriteLine("NOTE: Type 'CLEAR' to clear the screen at any time\n");
+        }
+
+        public static void PrintDictKeys(string intro_message, Dictionary<string, IPEndPoint> dict)
+        {
+            Console.WriteLine(intro_message);
+            foreach (string str in dict.Keys)
+            {
+                Console.WriteLine($"\t- {str}");
+            }
         }
     }
 }
