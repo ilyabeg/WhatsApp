@@ -10,13 +10,12 @@ namespace Client.Clients
     internal class ClientUDP : IClient
     {
         private UdpClient _client;
-        private byte[] _buffer;
         private string _username = "user0";
-        private readonly int _bufferSize = 4096;
-        private readonly IPAddress _multicast_group_ip = IPAddress.Parse("239.1.1.1");
-        private readonly int _listening_port = 20000;
-        private readonly IPEndPoint _multicast_group_ep;
 
+        private byte[] _buffer;
+        private readonly int _bufferSize = 4096;
+
+        private readonly int _listening_port = 20000;
         private Dictionary<string, Action> _input_option;
 
         public ClientUDP()
@@ -27,7 +26,7 @@ namespace Client.Clients
             _buffer = new byte[_bufferSize];
             _username = GetUserName(_username);     
             
-            _multicast_group_ep = new IPEndPoint(_multicast_group_ip, _listening_port);
+            Console.CancelKeyPress += DisconnectEventHandler; // <- attach event upon client disconnection
         }
 
         private void InitClient()
@@ -37,8 +36,8 @@ namespace Client.Clients
             _client.Client.ExclusiveAddressUse = false;
             _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
-            _client.Client.Bind(new IPEndPoint(IPAddress.Any, _listening_port));
-            _client.JoinMulticastGroup(_multicast_group_ip);            
+            _client.Client.Bind(new IPEndPoint(IPAddress.Loopback, _listening_port));
+            MulticastGroup.AddToMulticastGroup(_client);
         }
 
         public void InitOptions()
@@ -86,7 +85,7 @@ namespace Client.Clients
             Printer.PrintOptions();
 
             Task.Run(Listen); // run listen task in the background     
-            SendToMulticastGroup(_username + " is logged in...");
+            MulticastGroup.SendToMulticastGroup(_username + " is logged in...", _client);
 
             while (true)
             {
@@ -164,13 +163,12 @@ namespace Client.Clients
         private void SendDataPacket(DataPacket packet)
         {
             string datapacket = JsonSerializer.Serialize(packet);
-            SendToMulticastGroup(datapacket);
-        }
+            MulticastGroup.SendToMulticastGroup(datapacket, _client);
+        }   
 
-        private void SendToMulticastGroup(string message)
+        private void DisconnectEventHandler(object sender, EventArgs e)
         {
-            _buffer = Encoding.UTF8.GetBytes(message);
-            _client.Send(_buffer, _buffer.Length, _multicast_group_ep);
-        }        
+            MulticastGroup.SendToMulticastGroup($"{_username} Disconnected...\n", _client);
+        }
     }
 }

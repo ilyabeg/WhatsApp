@@ -6,11 +6,11 @@ namespace Client
     {
         static void Main(string[] args)
         {
-            //ClientTCP client = new ClientTCP();
-            //client.Start();
-
-            ClientUDP client = new ClientUDP();
+            ClientTCP client = new ClientTCP();
             client.Start();
+
+            //ClientUDP client = new ClientUDP();
+            //client.Start();
         }
     }
 }
