@@ -10,41 +10,21 @@ namespace Client.Clients
     {
         // each tcp client is part client part server
 
-        private TcpClient _client; // <- client half
         private string _username = "user0";
-        private readonly int _client_port = 20000;
-
-        private TcpListener _listener; // <- "server" half
-        private NetworkStream _stream;
-        
-        private byte[] _buffer;
-        private readonly int _bufferSize = 4096;
-
+        private TcpListener _listener;        
         private UdpClient _broadcast_helper; // udp broadcast helper to let every user know who is active
 
         private Dictionary<string, IPEndPoint> _users;
 
         public ClientTCP()
         {
-            InitClient();
             InitListener();
             InitBroadcastHelper();
                        
-            _buffer = new byte[_bufferSize];
             _username = GetUserName(_username);
 
             _users = new Dictionary<string, IPEndPoint>();  
             Console.CancelKeyPress += BroadcastDisconnect; // <- attach disconnect event handler
-        }
-
-        private void InitClient()
-        {
-            _client = new TcpClient();
-
-            _client.Client.ExclusiveAddressUse = false;
-            _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-
-            _client.Client.Bind(new IPEndPoint(IPAddress.Loopback, _client_port));                        
         }
 
         private void InitBroadcastHelper()
@@ -54,7 +34,7 @@ namespace Client.Clients
             _broadcast_helper.Client.ExclusiveAddressUse = false;
             _broadcast_helper.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
-            _broadcast_helper.Client.Bind(new IPEndPoint(IPAddress.Any, _client_port));
+            _broadcast_helper.Client.Bind(new IPEndPoint(IPAddress.Any, MulticastGroup.Port));
             MulticastGroup.AddToMulticastGroup(_broadcast_helper);
         }
 
@@ -106,33 +86,30 @@ namespace Client.Clients
             {
                 string selected_user = StringParser.ParseRemoteUser(message);
                 string actualMessage = StringParser.ParseActualMsg(message);
-
-                _client.Connect(_users[selected_user]); // connect to the remote user
-                _stream = _client.GetStream();
-
-                byte[] buffer = Encoding.UTF8.GetBytes(actualMessage);
-                _stream.Write(buffer, 0, buffer.Length);                
+                TcpClientHandler.ConnectAndSend(_users[selected_user], actualMessage); // connect and send to the user                              
             }
             catch (Exception e)
             {
                 Console.WriteLine($"[SYSTEM] Error! Couldn't write to user due to {e.Message}");
             }
-        }
+        }        
 
+        /// <summary>
+        /// We run a new task for each remote client which tries to contact us because if we would 
+        /// handle everything only in this method, the listener won't be able to listen and accept
+        /// new clients while we're handling the chat between the original remote client. We need 
+        /// to handle each client independently and listen for new clients simultaneously.
+        /// </summary>
         private void Listen()
         {
             try
             {
-                int totalRead;
-                while ((totalRead = _stream.Read(_buffer, 0, _buffer.Length)) != 0)
-                {
-                    string recievedMessage = Encoding.UTF8.GetString(_buffer, 0, totalRead);
-                    Printer.PrintMessage(recievedMessage);
-                }
+                TcpClient remote_client = _listener.AcceptTcpClient();
+                Task.Run(() => TcpClientHandler.HandleRemoteClient(remote_client)); // <- run new Task for every remote user
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                Console.WriteLine("Error! Connection to remote user lost.");
+                Console.WriteLine($"Error! Listener crashed due to {e.Message}");
             }
         }
 
