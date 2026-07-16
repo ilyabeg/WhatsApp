@@ -109,7 +109,7 @@ namespace Client.TCP
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Error! Listener crashed due to {e.Message}");
+                Console.WriteLine($"Error! Listener crashed due to: {e.Message}");
             }
         }
 

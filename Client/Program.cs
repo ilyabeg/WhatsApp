@@ -1,4 +1,4 @@
-﻿using Client.TCP;
+﻿using Client.Application;
 
 namespace Client
 {
@@ -6,11 +6,7 @@ namespace Client
     {
         static void Main(string[] args)
         {
-            ClientTCP client = new ClientTCP();
-            client.Start();
-
-            //ClientUDP client = new ClientUDP();
-            //client.Start();
+            Bootloader.Boot();
         }
     }
 }

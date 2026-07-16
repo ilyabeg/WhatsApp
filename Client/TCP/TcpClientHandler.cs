@@ -38,7 +38,7 @@ namespace Client.TCP
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Error! Connection to remote user lost due to {e.Message}");
+                Console.WriteLine($"Error! Connection to remote user lost due to: {e.Message}");
             }
         }
     }
