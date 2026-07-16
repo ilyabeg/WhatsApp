@@ -2,7 +2,7 @@
 using System.Text;
 using System.Text.Json;
 
-namespace Client.Application
+namespace Client.UDP
 {
     internal class DataPacket
     {

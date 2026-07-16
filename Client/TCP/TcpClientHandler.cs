@@ -1,8 +1,9 @@
-﻿using System.Net;
+﻿using Client.Clients;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-namespace Client.Application
+namespace Client.TCP
 {
     internal class TcpClientHandler
     {

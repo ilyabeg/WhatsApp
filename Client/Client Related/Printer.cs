@@ -1,7 +1,8 @@
-﻿using System.Net;
+﻿using Client.UDP;
+using System.Net;
 using System.Text;
 
-namespace Client.Application
+namespace Client.Clients
 {
     internal class Printer
     {

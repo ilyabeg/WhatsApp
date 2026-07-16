@@ -2,7 +2,7 @@
 using System.Net.Sockets;
 using System.Text;
 
-namespace Client.Application
+namespace Client.Clients
 {
     internal class MulticastGroup
     {

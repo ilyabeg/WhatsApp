@@ -1,10 +1,10 @@
-﻿using Client.Application;
+﻿using Client.Clients;
 using Client.Interfaces;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-namespace Client.Clients
+namespace Client.TCP
 {
     internal class ClientTCP : IClient
     {

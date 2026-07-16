@@ -1,5 +1,4 @@
-﻿
-namespace Client.Application
+﻿namespace Client.Clients
 {
     internal class StringParser
     {

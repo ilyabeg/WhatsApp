@@ -1,4 +1,4 @@
-﻿using Client.Clients;
+﻿using Client.TCP;
 
 namespace Client
 {
