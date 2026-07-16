@@ -35,10 +35,15 @@ namespace Client.Clients
         public static void PrintDictKeys(string intro_message, Dictionary<string, IPEndPoint> dict)
         {
             Console.WriteLine(intro_message);
-            foreach (string str in dict.Keys)
+            if (dict.Count > 0)
             {
-                Console.WriteLine($"\t- {str}");
+                foreach (string str in dict.Keys)
+                {
+                    Console.WriteLine($"\t- {str}");
+                }
             }
+            else
+                Console.WriteLine("\t- None.");
         }
     }
 }

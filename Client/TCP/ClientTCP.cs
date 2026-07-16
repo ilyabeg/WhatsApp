@@ -90,7 +90,7 @@ namespace Client.TCP
             }
             catch (Exception e)
             {
-                Console.WriteLine($"[SYSTEM] Error! Couldn't write to user due to {e.Message}");
+                Console.WriteLine($"[SYSTEM] Error! Couldn't write to user due to: {e.Message}");
             }
         }        
 
@@ -142,7 +142,7 @@ namespace Client.TCP
                 RemoveUser(splittedString[1]);
 
             else
-                Console.WriteLine($"[SYSTEM] Recieved -> {recievedMessage} from broadcast");
+                Console.WriteLine($"[SYSTEM] Recieved -> {recievedMessage} from broadcast.");
         }
 
         private void AddNewUser(string username, string endpoint)

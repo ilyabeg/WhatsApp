@@ -10,7 +10,8 @@ namespace Client.Application
 
         public static void Boot()
         {
-            if (GetDesition() == 'T' || GetDesition() == 't')
+            char desition = GetDesition();
+            if (desition == 'T' || desition == 't')
                 BootTCP();
             else
                 BootUDP();
@@ -18,13 +19,14 @@ namespace Client.Application
 
         private static char GetDesition()
         {
-            char desition = '0';
-            while ((desition != 'T' && desition != 't') || (desition != 'U' && desition != 'u'))
+            char desition;
+            do
             {
                 Console.WriteLine("[SYSTEM] Enter protocol ('T': TCP or 'U': UDP) >");
                 desition = Console.ReadKey().KeyChar;
                 Console.WriteLine();
             }
+            while (desition != 'T' && desition != 't' && desition != 'U' && desition != 'u');
             return desition;
         }
 

@@ -36,7 +36,7 @@ namespace Client.UDP
             _client.Client.ExclusiveAddressUse = false;
             _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
-            _client.Client.Bind(new IPEndPoint(IPAddress.Loopback, _listening_port));
+            _client.Client.Bind(new IPEndPoint(IPAddress.Any, _listening_port));
             MulticastGroup.AddToMulticastGroup(_client);
         }
 
