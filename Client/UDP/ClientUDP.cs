@@ -3,6 +3,7 @@ using Client.Clients;
 using Client.Interfaces;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 
@@ -20,6 +21,16 @@ namespace Client.UDP
         private List<string> _users;
         private Dictionary<string, Action> _input_option;
 
+
+        // declare console event and static reference to prevent garbage collection
+        private delegate bool ConsoleEventDelegate(int eventType);
+        private static ConsoleEventDelegate? _handler;
+
+        // import winAPI dll to use the SetConsoleCtrlHandler method
+        [DllImport("kernel32.dll", SetLastError = true)]        
+        private static extern bool SetConsoleCtrlHandler(ConsoleEventDelegate callback, bool add);
+
+
         public ClientUDP()
         {
             _udpEndPoint = new IPEndPoint(IPAddress.Any, _listening_port);
@@ -30,8 +41,29 @@ namespace Client.UDP
             _username = GetUserName(_username);
 
             InitOptions();
-            
-            Console.CancelKeyPress += DisconnectEventHandler; // <- attach event upon client disconnection
+
+            // make new event delegate that runs the event callback 
+            _handler = new ConsoleEventDelegate(ConsoleEventCallback);
+            SetConsoleCtrlHandler(_handler, true);
+        }
+
+        /// <summary>
+        /// event callback that executes this code upon closing the console application using CTRL+C or X button
+        /// </summary>
+        /// <param name="eventType"></param>
+        /// <returns></returns>
+        private bool ConsoleEventCallback(int eventType)
+        {
+            // 2 represents CTRL_CLOSE_EVENT (the X button)
+            // 0 represents CTRL+C 
+            if (eventType == 2 || eventType == 0)
+            {
+                // broadcast to everyone that this user disconnected
+                MulticastGroup.SendToMulticastGroup($"$DISCONNECT_USER_SIGNAL$#{_username}", _client);
+            }
+
+            // return false to let normal OS termination continue
+            return false;
         }
 
         private void InitClient()
@@ -52,6 +84,7 @@ namespace Client.UDP
             {
                 ["CHAT"] = () => {
                     Console.WriteLine("To broadcast specify the destination as 'ALL' ...");
+                    Printer.PrintList("[SYSTEM] Active Users:", _users);                    
                     DataPacket packet = Write();
                     if (packet != null) SendDataPacket(packet);
                 },
@@ -169,11 +202,6 @@ namespace Client.UDP
         {
             string datapacket = JsonSerializer.Serialize(packet);
             MulticastGroup.SendToMulticastGroup(datapacket, _client);
-        }
-
-        private void DisconnectEventHandler(object sender, EventArgs e)
-        {
-            MulticastGroup.SendToMulticastGroup($"$DISCONNECT_USER_SIGNAL$#{_username}", _client);
         }
     }
 }

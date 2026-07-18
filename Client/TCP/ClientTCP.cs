@@ -3,6 +3,7 @@ using Client.Clients;
 using Client.Interfaces;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Client.TCP
@@ -17,6 +18,16 @@ namespace Client.TCP
 
         private Dictionary<string, IPEndPoint> _users;
 
+
+        // declare console event and static reference to prevent garbage collection
+        private delegate bool ConsoleEventDelegate(int eventType);
+        private static ConsoleEventDelegate? _handler;
+
+        // import winAPI dll to use the SetConsoleCtrlHandler method
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool SetConsoleCtrlHandler(ConsoleEventDelegate callback, bool add);
+
+
         public ClientTCP()
         {
             InitListener();
@@ -24,9 +35,32 @@ namespace Client.TCP
                        
             _username = GetUserName(_username);
 
-            _users = new Dictionary<string, IPEndPoint>();  
-            Console.CancelKeyPress += BroadcastDisconnect; // <- attach disconnect event handler
+            _users = new Dictionary<string, IPEndPoint>();
+
+            // make new event delegate that runs the event callback 
+            _handler = new ConsoleEventDelegate(ConsoleEventCallback);
+            SetConsoleCtrlHandler(_handler, true);
         }
+
+        /// <summary>
+        /// event callback that executes this code upon closing the console application using CTRL+C or X button
+        /// </summary>
+        /// <param name="eventType"></param>
+        /// <returns></returns>
+        private bool ConsoleEventCallback(int eventType)
+        {
+            // 2 represents CTRL_CLOSE_EVENT (the X button)
+            // 0 represents CTRL+C 
+            if (eventType == 2 || eventType == 0)
+            {
+                // broadcast to everyone that this user disconnected
+                MulticastGroup.SendToMulticastGroup($"$DISCONNECT_USER_SIGNAL$#{_username}", _broadcast_helper);
+            }
+
+            // return false to let normal OS termination continue
+            return false;
+        }
+
 
         private void InitBroadcastHelper()
         {
@@ -145,12 +179,6 @@ namespace Client.TCP
         {
             // send username to multicast group so every user will know who is connected and where
             MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}#{_listener.LocalEndpoint}", _broadcast_helper);
-        }
-
-        private void BroadcastDisconnect(object sender, EventArgs e)
-        {
-            // send username to multicast group so every user will know who disconnected
-            MulticastGroup.SendToMulticastGroup($"$DISCONNECT_USER_SIGNAL$#{_username}", _broadcast_helper);
         }
     }
 }
