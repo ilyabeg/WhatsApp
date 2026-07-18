@@ -1,11 +1,9 @@
-﻿using Client.UDP;
-using System.Collections.Concurrent;
-using System.Net;
+﻿using System.Collections.Concurrent;
 using System.Text;
 
-namespace Client.Client_Related
+namespace Client.UDP
 {
-    internal class BroadcastRecieverHandler
+    internal class BroadcastHandlerUDP
     {
         private static ConcurrentDictionary<string, Func<string, List<string>, int>> _options = new ConcurrentDictionary<string, Func<string, List<string>, int>>()
         {
@@ -28,7 +26,7 @@ namespace Client.Client_Related
         };
 
         /// <summary>
-        /// if handler knows how to handle the broadcast, handle and return the number of the potion
+        /// if handler knows how to handle the broadcast, handle and return the number of the option
         /// else, return 0 (couldn't hanlde)
         /// </summary>
         /// <param name="recievedBytes"></param>
@@ -51,7 +49,7 @@ namespace Client.Client_Related
         {
             if (!users.Contains(username))
             {               
-                Console.WriteLine($"[SYSTEM] New User {username} logged in...");
+                Console.WriteLine($"[SYSTEM] User {username} logged in...");
                 users.Add(username);
             }
         }

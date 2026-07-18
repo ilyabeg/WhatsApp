@@ -1,5 +1,4 @@
-﻿using Client.Client_Related;
-using Client.Clients;
+﻿using Client.Clients;
 using Client.Interfaces;
 using System.Net;
 using System.Net.Sockets;
@@ -169,7 +168,7 @@ namespace Client.UDP
         {
             try
             {
-                int executed_option = BroadcastRecieverHandler.HandleBroadcast(recievedBytes, ref _users);
+                int executed_option = BroadcastHandlerUDP.HandleBroadcast(recievedBytes, ref _users);
 
                 // if BroadcastHandler couldn't deal with the broadcast, let the data packet processor try to hanlde the data
                 if (executed_option == 0)

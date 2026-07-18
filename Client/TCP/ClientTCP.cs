@@ -1,5 +1,4 @@
-﻿using Client.Client_Related;
-using Client.Clients;
+﻿using Client.Clients;
 using Client.Interfaces;
 using System.Net;
 using System.Net.Sockets;
@@ -52,9 +51,9 @@ namespace Client.TCP
             // 2 represents CTRL_CLOSE_EVENT (the X button)
             // 0 represents CTRL+C 
             if (eventType == 2 || eventType == 0)
-            {
+            {   
                 // broadcast to everyone that this user disconnected
-                MulticastGroup.SendToMulticastGroup($"$DISCONNECT_USER_SIGNAL$#{_username}", _broadcast_helper);
+                MulticastGroup.SendToMulticastGroup($"$DISCONNECT_USER_SIGNAL$#{_username}#{_listener.LocalEndpoint}", _broadcast_helper);
             }
 
             // return false to let normal OS termination continue
@@ -99,6 +98,7 @@ namespace Client.TCP
             Task.Run(RecieveBroadcasts); // run broadcast reciever task
 
             BroadcastUsername();
+            Thread.Sleep(250);
 
             Console.WriteLine("[SYSTEM] To Start chatting type: '@user' and write a message:");
             Printer.PrintDictKeys("[SYSTEM] Active users:", _users);
@@ -123,7 +123,7 @@ namespace Client.TCP
             {
                 string selected_user = StringParser.ParseRemoteUser(message);
                 string actualMessage = StringParser.ParseActualMsg(message);
-                TcpClientHandler.ConnectAndSend(_users[selected_user], actualMessage); // connect and send to the user                              
+                TcpClientHandler.ConnectAndSend(_users[selected_user], actualMessage, _username); // connect and send to the user                              
             }
             catch (Exception e)
             {
@@ -152,29 +152,33 @@ namespace Client.TCP
 
         private void RecieveBroadcasts()
         {
-            try
+            IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0); // listen to any remote user
+            while (true)
             {
-                IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0); // listen to any remote user
-                while (true)
+                try
                 {
                     byte[] recievedBytes = _broadcast_helper.Receive(ref remoteEndPoint);
                     ReadBroadcast(recievedBytes, remoteEndPoint);
                 }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"[SYSTEM] Error! Connection to Network lost due to: {e.Message}");
+                catch (Exception e)
+                {
+                    Console.WriteLine($"[SYSTEM] Error reading broadcast due to: {e.Message}");
+                }
             }
         }
 
         private void ReadBroadcast(byte[] recievedBytes, IPEndPoint remoteEndPoint)
         {
             string recievedMessage = Encoding.UTF8.GetString(recievedBytes);
-            string[] splittedString = recievedMessage.Split('#');
+
+            int executed_option = BroadcastHandlerTCP.HandleBroadcast(recievedBytes, ref _users);
 
             // if BroadcastHandler couldn't handle the broadcast, print it out
-//            if (BroadcastRecieverHandler.HandleBroadcast(recievedBytes, ref _users) == 0)
-//                Console.WriteLine($"[SYSTEM] Recieved -> {recievedMessage} from broadcast.");
+            if (executed_option == 0)
+                Console.WriteLine($"[SYSTEM] Recieved -> {recievedMessage} from broadcast.");
+
+            if (executed_option == 1)
+                BroadcastUsername();
         }       
 
         private void BroadcastUsername()

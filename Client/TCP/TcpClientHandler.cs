@@ -9,14 +9,14 @@ namespace Client.TCP
     {
         private static readonly int _buffer_size = 4096;
 
-        public static void ConnectAndSend(IPEndPoint remoteEP, string message)
+        public static void ConnectAndSend(IPEndPoint remoteEP, string message, string author)
         {
-            using TcpClient client = new TcpClient(); // connect to the selected client
-            using NetworkStream stream = client.GetStream(); // open new stream
-
+            using TcpClient client = new TcpClient(); // make new client
             client.Connect(remoteEP); // connect to the remote user
 
-            byte[] buffer = Encoding.UTF8.GetBytes(message);
+            using NetworkStream stream = client.GetStream(); // open new stream
+
+            byte[] buffer = Encoding.UTF8.GetBytes($"({author}): {message}");
             stream.Write(buffer, 0, buffer.Length);
         }
 
