@@ -13,6 +13,8 @@ namespace Client.Clients
         private static int _buffer_size = 4096;
         private static byte[] _buffer = new byte[_buffer_size];
 
+        private static readonly object _lock = new object();
+
         public static void AddToMulticastGroup(UdpClient client)
         {
             client.JoinMulticastGroup(IPAddress);
@@ -20,7 +22,11 @@ namespace Client.Clients
 
         public static void SendToMulticastGroup(string message, UdpClient client)
         {
-            _buffer = Encoding.UTF8.GetBytes(message);
+            // lock the buffer in case 2 threads try to parse the string into bytes at the exact same time
+            lock (_lock)
+            {
+                _buffer = Encoding.UTF8.GetBytes(message);
+            }
             client.Send(_buffer, _buffer.Length, EndPoint);
         }
     }

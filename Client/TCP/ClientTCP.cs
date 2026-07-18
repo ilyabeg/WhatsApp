@@ -1,4 +1,5 @@
-﻿using Client.Clients;
+﻿using Client.Client_Related;
+using Client.Clients;
 using Client.Interfaces;
 using System.Net;
 using System.Net.Sockets;
@@ -135,49 +136,21 @@ namespace Client.TCP
             string recievedMessage = Encoding.UTF8.GetString(recievedBytes);
             string[] splittedString = recievedMessage.Split('#');
 
-            if (recievedMessage.StartsWith("$USER_SIGNAL$"))
-                AddNewUser(splittedString[1], splittedString[2]);
-
-            else if (recievedMessage.StartsWith("$DISCONNECT_SIGNAL$"))
-                RemoveUser(splittedString[1]);
-
-            else
+            // if BroadcastHandler couldn't handle the broadcast, print it out
+            if (BroadcastRecieverHandler.HandleBroadcast(recievedBytes, ref _users) == 0)
                 Console.WriteLine($"[SYSTEM] Recieved -> {recievedMessage} from broadcast.");
-        }
-
-        private void AddNewUser(string username, string endpoint)
-        {
-            if (!_users.ContainsKey(username))
-            {
-                string[] splitedEndPoint = endpoint.Split(':');
-
-                IPAddress ip = IPAddress.Parse(splitedEndPoint[0]);
-                int port = int.Parse(splitedEndPoint[1]);
-
-                IPEndPoint ep = new IPEndPoint(ip, port);
-
-                _users.TryAdd(username, ep);
-            }
-        }
-
-        private void RemoveUser(string username)
-        {
-            if (_users.ContainsKey(username))
-            {
-                _users.Remove(username);
-            }
-        }
+        }       
 
         private void BroadcastUsername()
         {
             // send username to multicast group so every user will know who is connected and where
-            MulticastGroup.SendToMulticastGroup($"$USER_SIGNAL$#{_username}#{_listener.LocalEndpoint}", _broadcast_helper);
+            MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}#{_listener.LocalEndpoint}", _broadcast_helper);
         }
 
         private void BroadcastDisconnect(object sender, EventArgs e)
         {
             // send username to multicast group so every user will know who disconnected
-            MulticastGroup.SendToMulticastGroup($"$DISCONNECT_SIGNAL$#{_username}", _broadcast_helper);
+            MulticastGroup.SendToMulticastGroup($"$DISCONNECT_USER_SIGNAL$#{_username}", _broadcast_helper);
         }
     }
 }

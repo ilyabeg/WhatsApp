@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using Client.Clients;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 
@@ -53,6 +54,16 @@ namespace Client.UDP
                 throw new Exception("[SYSTEM] Invalid message input.");
 
             return message;
+        }
+
+        public static void ProcessDataPacket(byte[] recievedBytes, string username)
+        {
+            DataPacket recievedPacket = TransferData(recievedBytes);
+
+            // if the message is meant for me -> print it, else, ignore it
+            if (recievedPacket.Reciever.Equals(username, StringComparison.OrdinalIgnoreCase) ||
+                recievedPacket.Reciever.Equals("all", StringComparison.OrdinalIgnoreCase))
+                Printer.PrintDataPacket(recievedPacket);
         }
     }
 }

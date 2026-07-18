@@ -1,4 +1,5 @@
-﻿using Client.Clients;
+﻿using Client.Client_Related;
+using Client.Clients;
 using Client.Interfaces;
 using System.Net;
 using System.Net.Sockets;
@@ -12,19 +13,27 @@ namespace Client.UDP
         private UdpClient _client;
         private string _username = "user0";
 
-        private byte[] _buffer;
-        private readonly int _bufferSize = 4096;
-
         private readonly int _listening_port = 20000;
+
+        public readonly IPEndPoint _udpEndPoint;
+        public readonly IPEndPoint _localEndPoint;
+
+        private static readonly int _buffer_size = 4096;
+
+        private Dictionary<string, IPEndPoint> _users;
         private Dictionary<string, Action> _input_option;
 
         public ClientUDP()
         {
-            InitClient();            
-            InitOptions();
+            _udpEndPoint = new IPEndPoint(IPAddress.Any, _listening_port);
+            _localEndPoint = new IPEndPoint(IPAddress.Loopback, _listening_port);
 
-            _buffer = new byte[_bufferSize];
-            _username = GetUserName(_username);     
+            _users = new Dictionary<string, IPEndPoint>();
+
+            InitClient();
+            _username = GetUserName(_username);
+
+            InitOptions();
             
             Console.CancelKeyPress += DisconnectEventHandler; // <- attach event upon client disconnection
         }
@@ -36,37 +45,41 @@ namespace Client.UDP
             _client.Client.ExclusiveAddressUse = false;
             _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
-            _client.Client.Bind(new IPEndPoint(IPAddress.Any, _listening_port));
+            _client.Client.Bind(_udpEndPoint);
+
             MulticastGroup.AddToMulticastGroup(_client);
         }
 
         public void InitOptions()
         {
-            _input_option = new Dictionary<string, Action>();
-            _input_option.Add("CHAT", () => {
-                Console.WriteLine("To broadcast specify the destination as 'ALL' ...");
-                DataPacket packet = Write();
-                if (packet != null) SendDataPacket(packet);
-            });
-            _input_option.Add("CHAT G", () => {
-                DataPacket packet = Write();
-                if (packet != null) GroupChats.SendToGroupChat(packet, _client);
-            });
-            _input_option.Add("NEW G", () => {
-                // create new group
-                var newGroup = GroupChats.CreateNewGroup(_client);
-
-                // broadcast the new group so all clients add it to their local memmory
-                if (newGroup.groupName != null && newGroup.groupIP != null)
+            _input_option = new Dictionary<string, Action>()
+            {
+                ["CHAT"] = () => {
+                    Console.WriteLine("To broadcast specify the destination as 'ALL' ...");
+                    DataPacket packet = Write();
+                    if (packet != null) SendDataPacket(packet);
+                },
+                ["CHAT G"] = () =>
                 {
-                    string newGroupBroadcast = $"$NEW_GROUP_SIGNAL$#{newGroup.groupName}#{newGroup.groupIP}";
-                    MulticastGroup.SendToMulticastGroup(newGroupBroadcast, _client);
-                }
-            });
-            _input_option.Add("JOIN G", () => GroupChats.JoinGroup(_client));
-            _input_option.Add("LEAVE G", () => GroupChats.LeaveGroup(_client));
-            _input_option.Add("OPTIONS", Printer.PrintOptions);
-            _input_option.Add("CLEAR", Console.Clear);
+                    DataPacket packet = Write();
+                    if (packet != null) GroupChats.SendToGroupChat(packet, _client);
+                },
+                ["NEW G"] = () =>
+                {
+                    var newGroup = GroupChats.CreateNewGroup(_client);
+
+                    // broadcast the new group so all clients add it to their local memmory
+                    if (newGroup.groupName != null && newGroup.groupIP != null)
+                    {
+                        string newGroupBroadcast = $"$NEW_GROUP_SIGNAL$#{newGroup.groupName}#{newGroup.groupIP}";
+                        MulticastGroup.SendToMulticastGroup(newGroupBroadcast, _client);
+                    }
+                },
+                ["JOIN G"] = () => GroupChats.JoinGroup(_client),
+                ["LEAVE G"] = () => GroupChats.LeaveGroup(_client),
+                ["OPTIONS"] = Printer.PrintOptions,
+                ["CLEAR"] = Console.Clear
+            };
         }
 
         private string GetUserName(string deafult)
@@ -85,7 +98,7 @@ namespace Client.UDP
             Printer.PrintOptions();
 
             Task.Run(Listen); // run listen task in the background     
-            MulticastGroup.SendToMulticastGroup(_username + " is logged in...", _client);
+            MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}" , _client);
 
             while (true)
             {
@@ -94,7 +107,7 @@ namespace Client.UDP
             }
         }
 
-        public void ProcessMessage(string message)
+        private void ProcessMessage(string message)
         {
             if (_input_option.ContainsKey(message))
                 _input_option[message].Invoke();
@@ -123,27 +136,21 @@ namespace Client.UDP
         {
             try
             {
-                string str = Encoding.UTF8.GetString(recievedBytes);
-                if (str.StartsWith("$NEW_GROUP_SIGNAL$"))
-                    GroupChats.AddGroup(str);
-                else
-                    ProcessDataPacket(recievedBytes);
+                int executed_option = BroadcastRecieverHandler.HandleBroadcast(recievedBytes, ref _users);
+
+                // if BroadcastHandler couldn't deal with the broadcast, let the data packet processor try to hanlde the data
+                if (executed_option == 0)
+                    DataPacket.ProcessDataPacket(recievedBytes, _username);
+
+                // if new user added, send him my name so he knows I exist.
+                else if (executed_option == 1)
+                    SendTo(remoteEP, $"$NEW_USER_SIGNAL$#{_username}");
             }
             catch
             {
                 Printer.PrintBytes(recievedBytes);
             }
-        }
-
-        private void ProcessDataPacket(byte[] recievedBytes)
-        {
-            DataPacket recievedPacket = DataPacket.TransferData(recievedBytes);
-
-            // if the message is meant for me -> print it, else, ignore it
-            if (recievedPacket.Reciever.Equals(_username, StringComparison.OrdinalIgnoreCase) ||
-                recievedPacket.Reciever.Equals("all", StringComparison.OrdinalIgnoreCase))
-                Printer.PrintDataPacket(recievedPacket);
-        }
+        }        
 
         private DataPacket Write()
         {
@@ -163,12 +170,19 @@ namespace Client.UDP
         private void SendDataPacket(DataPacket packet)
         {
             string datapacket = JsonSerializer.Serialize(packet);
-            MulticastGroup.SendToMulticastGroup(datapacket, _client);
+            SendTo(_users[packet.Reciever], datapacket);
         }   
+
+        public void SendTo(IPEndPoint remoteEP, string message)
+        {
+            byte[] buffer = new byte[_buffer_size];
+            buffer = Encoding.UTF8.GetBytes(message);
+            _client.Send(buffer, buffer.Length, remoteEP);
+        }
 
         private void DisconnectEventHandler(object sender, EventArgs e)
         {
-            MulticastGroup.SendToMulticastGroup($"{_username} Disconnected...\n", _client);
+            MulticastGroup.SendToMulticastGroup($"$DISCONNECT_USER_SIGNAL$#{_username}", _client);
         }
     }
 }
