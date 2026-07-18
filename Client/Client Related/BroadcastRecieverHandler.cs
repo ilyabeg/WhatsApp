@@ -7,14 +7,11 @@ namespace Client.Client_Related
 {
     internal class BroadcastRecieverHandler
     {
-        private static readonly int _port = 20000;
-        private static readonly IPEndPoint _localEndPoint = new IPEndPoint(IPAddress.Loopback, _port);
-
         private static ConcurrentDictionary<string, Func<string, List<string>, int>> _options = new ConcurrentDictionary<string, Func<string, List<string>, int>>()
         {
             ["$NEW_USER_SIGNAL$"] = (username, users) =>
             {
-                if (users.Contains(username)) return 3; // <- returns a different option than 1 to not cause infinite loop
+                if (users.Contains(username)) return -1; // <- returns a different option than 1 to not cause infinite loop
                 AddNewUser(username, ref users);                
                 return 1;
             },
@@ -22,6 +19,11 @@ namespace Client.Client_Related
             {
                 RemoveUser(username, ref users);
                 return 2;
+            },
+            ["$ADD_GROUPS_SIGNAL$"] = (groups_string, tmp) => // tmp is useless here but necessary to invoke the func
+            {
+                GroupChats.AddGroups(groups_string);
+                return 3;
             }
         };
 
@@ -62,21 +64,5 @@ namespace Client.Client_Related
                 users.Remove(username);
             }
         }
-
-        //public static void AddNewGroup(string name, string endpoint)
-        //{
-        //    if (!users.ContainsKey(username))
-        //    {
-        //        string[] splitedEndPoint = endpoint.Split(':');
-
-        //        IPAddress ip = IPAddress.Parse(splitedEndPoint[0]);
-        //        int port = int.Parse(splitedEndPoint[1]);
-
-        //        IPEndPoint ep = new IPEndPoint(ip, port);
-
-        //        Console.WriteLine($"[SYSTEM] New User {username} logged in...");
-        //        users.TryAdd(username, ep);
-        //    }
-        //}
     }
 }

@@ -100,7 +100,7 @@ namespace Client.UDP
                     // broadcast the new group so all clients add it to their local memmory
                     if (newGroup.groupName != null && newGroup.groupIP != null)
                     {
-                        string newGroupBroadcast = $"$NEW_GROUP_SIGNAL$#{newGroup.groupName}#{newGroup.groupIP}";
+                        string newGroupBroadcast = $"$ADD_GROUPS_SIGNAL$#{GroupChats.GetGroups()}";
                         MulticastGroup.SendToMulticastGroup(newGroupBroadcast, _client);
                     }
                 },
@@ -175,9 +175,15 @@ namespace Client.UDP
                 if (executed_option == 0)
                     DataPacket.ProcessDataPacket(recievedBytes, _username);
 
-                // if new user added, send him my name so he knows I exist.
+                // if new user added, send him my name so he knows I exist and all existing group chats.
                 else if (executed_option == 1)
+                {
                     MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}", _client);
+
+                    string existing_groups = GroupChats.GetGroups();
+                    if (existing_groups != null)
+                        MulticastGroup.SendToMulticastGroup($"$ADD_GROUPS_SIGNAL$#{existing_groups}", _client);
+                }
             }
             catch
             {
