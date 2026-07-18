@@ -12,7 +12,7 @@ namespace Client.UDP
     internal class ClientUDP : IClient
     {
         private UdpClient _client;
-        private string _username = "user0";
+        private string _username;
 
         private readonly int _listening_port = 20000;
 
@@ -38,7 +38,7 @@ namespace Client.UDP
             _users = new List<string>();
 
             InitClient();
-            _username = GetUserName(_username);
+            _username = GetUserName();
 
             InitOptions();
 
@@ -111,15 +111,17 @@ namespace Client.UDP
             };
         }
 
-        private string GetUserName(string deafult)
+        private string GetUserName()
         {
-            Console.WriteLine($"Before starting to chat, enter your user name (current deafult: {deafult}):");
+            Console.WriteLine("[SYSTEM] Before starting to chat, enter your user name:");
             string username = Console.ReadLine();
 
-            if (!string.IsNullOrWhiteSpace(username))
-                return username;
-
-            return deafult;
+            while (string.IsNullOrWhiteSpace(username))
+            {
+                Console.WriteLine("[SYSTEM] Please enter valid username:");
+                username = Console.ReadLine();
+            }
+            return username;
         }
 
         public void Start()

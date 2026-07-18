@@ -12,7 +12,7 @@ namespace Client.TCP
     {
         // each tcp client is part client part server
 
-        private string _username = "user0";
+        private string _username;
         private TcpListener _listener;        
         private UdpClient _broadcast_helper; // udp broadcast helper to let every user know who is active
 
@@ -33,7 +33,7 @@ namespace Client.TCP
             InitListener();
             InitBroadcastHelper();
                        
-            _username = GetUserName(_username);
+            _username = GetUserName();
 
             _users = new Dictionary<string, IPEndPoint>();
 
@@ -80,15 +80,17 @@ namespace Client.TCP
             _listener.Start();
         }
 
-        private string GetUserName(string deafult)
+        private string GetUserName()
         {
-            Console.WriteLine($"Before starting to chat, enter your user name (current deafult: {deafult}):");
+            Console.WriteLine("[SYSTEM] Before starting to chat, enter your user name:");
             string username = Console.ReadLine();
 
-            if (!string.IsNullOrWhiteSpace(username)) 
-                return username;
-
-            return deafult;
+            while (string.IsNullOrWhiteSpace(username))
+            {
+                Console.WriteLine("[SYSTEM] Please enter valid username:");
+                username = Console.ReadLine();
+            }
+            return username;
         }
 
         public void Start()
