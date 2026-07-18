@@ -139,15 +139,18 @@ namespace Client.TCP
         /// </summary>
         private void Listen()
         {
-            try
+            while (true)
             {
-                TcpClient remote_client = _listener.AcceptTcpClient();
-                Task.Run(() => TcpClientHandler.HandleRemoteClient(remote_client)); // <- run new Task for every remote user
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Error! Listener crashed due to: {e.Message}");
-            }
+                try
+                {
+                    TcpClient remote_client = _listener.AcceptTcpClient();
+                    Task.Run(() => TcpClientHandler.HandleRemoteClient(remote_client)); // <- run new Task for every remote user
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Error! Listener crashed due to: {e.Message}");
+                }
+            }            
         }
 
         private void RecieveBroadcasts()
