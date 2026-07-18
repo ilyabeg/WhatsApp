@@ -137,8 +137,8 @@ namespace Client.TCP
             string[] splittedString = recievedMessage.Split('#');
 
             // if BroadcastHandler couldn't handle the broadcast, print it out
-            if (BroadcastRecieverHandler.HandleBroadcast(recievedBytes, ref _users) == 0)
-                Console.WriteLine($"[SYSTEM] Recieved -> {recievedMessage} from broadcast.");
+//            if (BroadcastRecieverHandler.HandleBroadcast(recievedBytes, ref _users) == 0)
+//                Console.WriteLine($"[SYSTEM] Recieved -> {recievedMessage} from broadcast.");
         }       
 
         private void BroadcastUsername()

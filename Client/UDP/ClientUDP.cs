@@ -16,19 +16,15 @@ namespace Client.UDP
         private readonly int _listening_port = 20000;
 
         public readonly IPEndPoint _udpEndPoint;
-        public readonly IPEndPoint _localEndPoint;
 
-        private static readonly int _buffer_size = 4096;
-
-        private Dictionary<string, IPEndPoint> _users;
+        private List<string> _users;
         private Dictionary<string, Action> _input_option;
 
         public ClientUDP()
         {
             _udpEndPoint = new IPEndPoint(IPAddress.Any, _listening_port);
-            _localEndPoint = new IPEndPoint(IPAddress.Loopback, _listening_port);
 
-            _users = new Dictionary<string, IPEndPoint>();
+            _users = new List<string>();
 
             InitClient();
             _username = GetUserName(_username);
@@ -99,6 +95,8 @@ namespace Client.UDP
 
             Task.Run(Listen); // run listen task in the background     
             MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}" , _client);
+            Thread.Sleep(250);
+            Printer.PrintList("[SYSTEM] Active Users:", _users);
 
             while (true)
             {
@@ -144,7 +142,7 @@ namespace Client.UDP
 
                 // if new user added, send him my name so he knows I exist.
                 else if (executed_option == 1)
-                    SendTo(remoteEP, $"$NEW_USER_SIGNAL$#{_username}");
+                    MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}", _client);
             }
             catch
             {
@@ -170,14 +168,7 @@ namespace Client.UDP
         private void SendDataPacket(DataPacket packet)
         {
             string datapacket = JsonSerializer.Serialize(packet);
-            SendTo(_users[packet.Reciever], datapacket);
-        }   
-
-        public void SendTo(IPEndPoint remoteEP, string message)
-        {
-            byte[] buffer = new byte[_buffer_size];
-            buffer = Encoding.UTF8.GetBytes(message);
-            _client.Send(buffer, buffer.Length, remoteEP);
+            MulticastGroup.SendToMulticastGroup(datapacket, _client);
         }
 
         private void DisconnectEventHandler(object sender, EventArgs e)

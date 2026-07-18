@@ -10,10 +10,11 @@ namespace Client.Client_Related
         private static readonly int _port = 20000;
         private static readonly IPEndPoint _localEndPoint = new IPEndPoint(IPAddress.Loopback, _port);
 
-        private static ConcurrentDictionary<string, Func<string, Dictionary<string, IPEndPoint>, int>> _options = new ConcurrentDictionary<string, Func<string, Dictionary<string, IPEndPoint>, int>>()
+        private static ConcurrentDictionary<string, Func<string, List<string>, int>> _options = new ConcurrentDictionary<string, Func<string, List<string>, int>>()
         {
             ["$NEW_USER_SIGNAL$"] = (username, users) =>
             {
+                if (users.Contains(username)) return 3; // <- returns a different option than 1 to not cause infinite loop
                 AddNewUser(username, ref users);                
                 return 1;
             },
@@ -31,7 +32,7 @@ namespace Client.Client_Related
         /// <param name="recievedBytes"></param>
         /// <param name="users"></param>
         /// <returns></returns>
-        public static int HandleBroadcast(byte[] recievedBytes, ref Dictionary<string, IPEndPoint> users)
+        public static int HandleBroadcast(byte[] recievedBytes, ref List<string> users)
         {
             string recieved = Encoding.UTF8.GetString(recievedBytes);
             string[] splitted = recieved.Split('#');
@@ -44,18 +45,18 @@ namespace Client.Client_Related
             return 0;
         }
 
-        public static void AddNewUser(string username, ref Dictionary<string, IPEndPoint> users)
+        public static void AddNewUser(string username, ref List<string> users)
         {
-            if (!users.ContainsKey(username))
+            if (!users.Contains(username))
             {               
                 Console.WriteLine($"[SYSTEM] New User {username} logged in...");
-                users.TryAdd(username, _localEndPoint);
+                users.Add(username);
             }
         }
 
-        public static void RemoveUser(string username, ref Dictionary<string, IPEndPoint> users)
+        public static void RemoveUser(string username, ref List<string> users)
         {
-            if (users.ContainsKey(username))
+            if (users.Contains(username))
             {
                 Console.WriteLine($"[SYSTEM] User {username} Disconnected.");
                 users.Remove(username);
