@@ -3,20 +3,23 @@ using Client.Interfaces;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
 
 namespace Client.UDP
 {
     internal class ClientUDP : IClient
     {
+        // client for unicast
         private UdpClient _client;
         private string _username;
 
+        // listener to listen for broadcasts
+        private UdpClient _listener;
         private readonly int _listening_port = 20000;
+        public readonly IPEndPoint _listeningEndPoint;
 
-        public readonly IPEndPoint _udpEndPoint;
-
-        private List<string> _users;
+        private Dictionary<string, IPEndPoint> _users;
         private Dictionary<string, Action> _input_option;
 
 
@@ -31,11 +34,12 @@ namespace Client.UDP
 
         public ClientUDP()
         {
-            _udpEndPoint = new IPEndPoint(IPAddress.Any, _listening_port);
+            _listeningEndPoint = new IPEndPoint(IPAddress.Any, _listening_port);
+            InitListener();
 
-            _users = new List<string>();
-
-            InitClient();
+            _users = new Dictionary<string, IPEndPoint>();
+            
+            _client = new UdpClient(new IPEndPoint(IPAddress.Any, 0)); // bind to any port
             _username = GetUserName();
 
             InitOptions();
@@ -64,16 +68,15 @@ namespace Client.UDP
             return false;
         }
 
-        private void InitClient()
+        private void InitListener()
         {
-            _client = new UdpClient();
+            _listener = new UdpClient();
 
-            _client.Client.ExclusiveAddressUse = false;
-            _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            _listener.Client.ExclusiveAddressUse = false;
+            _listener.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
-            _client.Client.Bind(_udpEndPoint);
-
-            MulticastGroup.AddToMulticastGroup(_client);
+            _listener.Client.Bind(_listeningEndPoint); // bind to multicast port
+            MulticastGroup.AddToMulticastGroup(_listener);
         }
 
         public void InitOptions()
@@ -82,11 +85,11 @@ namespace Client.UDP
             {
                 ["CHAT"] = () => {
                     Console.WriteLine("To broadcast specify the destination as 'ALL' ...");
-                    Printer.PrintList("[SYSTEM] Active Users:", _users); 
+                    Printer.PrintDictKeys("[SYSTEM] Active Users:", _users); 
                     
                     DataPacket packet = Write();
 
-                    if (packet != null && (_users.Contains(packet.Reciever) || packet.Reciever.Equals("all", StringComparison.OrdinalIgnoreCase)))
+                    if (packet != null && (_users.ContainsKey(packet.Reciever) || packet.Reciever.Equals("all", StringComparison.OrdinalIgnoreCase)))
                         SendDataPacket(packet);
                     else
                         Console.WriteLine("[SYSTEM] Error! Couldn't write the Data Packet.");
@@ -135,10 +138,12 @@ namespace Client.UDP
         {
             Printer.PrintOptions();
 
-            Task.Run(Listen); // run listen task in the background     
-            MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}" , _client);
+            Task.Run(Listen);             // run user listener task in the background
+            Task.Run(ListenForBroadcast); // run broadcast listener task in the background
+
+            MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}#{_client.Client.LocalEndPoint}" , _client);
             Thread.Sleep(250);
-            Printer.PrintList("[SYSTEM] Active Users:", _users);
+            Printer.PrintDictKeys("[SYSTEM] Active Users:", _users);
 
             while (true)
             {
@@ -176,16 +181,49 @@ namespace Client.UDP
         {
             try
             {
-                int executed_option = BroadcastHandlerUDP.HandleBroadcast(recievedBytes, ref _users);
+                DataPacket.ProcessDataPacket(recievedBytes, _username);
+            }
+            catch
+            {
+                Console.WriteLine("[SYSTEM] Error! Couldn't process Data Packet.");
+                Printer.PrintBytes(recievedBytes);
+            }
+        }
 
-                // if BroadcastHandler couldn't deal with the broadcast, let the data packet processor try to hanlde the data
+        /// <summary>
+        /// Broadcast listener to add/remove users/groups from local memory
+        /// </summary>
+        private void ListenForBroadcast()
+        {
+            try
+            {
+                IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0); // listen to any remote user
+                while (true)
+                {
+                    byte[] recievedBytes = _listener.Receive(ref remoteEndPoint);
+                    ReadBroadcast(recievedBytes);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"[SYSTEM] Error! Connection to Network lost due to: {e.Message}");
+            }
+        }
+
+        private void ReadBroadcast(byte[] recievedBytes)
+        {
+            try
+            {
+                int executed_option = BroadcastHandlerUDP.HandleBroadcast(recievedBytes, _users);
+
+                // if broadcast handler couldn't handle the broadcast, try to process it as a Data Packet
                 if (executed_option == 0)
                     DataPacket.ProcessDataPacket(recievedBytes, _username);
 
                 // if new user added, send him my name so he knows I exist and all existing group chats.
-                else if (executed_option == 1)
+                if (executed_option == 1)
                 {
-                    MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}", _client);
+                    MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}#{_client.Client.LocalEndPoint}", _client);
 
                     string existing_groups = GroupChats.GetGroups();
                     if (existing_groups != null)
@@ -194,11 +232,12 @@ namespace Client.UDP
             }
             catch
             {
+                Console.WriteLine("[SYSTEM] Error! Couldn't process broadcast.");
                 Printer.PrintBytes(recievedBytes);
             }
         }        
 
-        private DataPacket Write()
+        private DataPacket? Write()
         {
             try
             {
@@ -213,10 +252,15 @@ namespace Client.UDP
             return null;
         }
 
+        /// <summary>
+        /// Sends datapacket as bytes to remote user (unicast)
+        /// </summary>
+        /// <param name="packet"></param>
         private void SendDataPacket(DataPacket packet)
         {
             string datapacket = JsonSerializer.Serialize(packet);
-            MulticastGroup.SendToMulticastGroup(datapacket, _client);
+            byte[] buffer = Encoding.UTF8.GetBytes(datapacket);
+            _client.Send(buffer, buffer.Length, _users[packet.Reciever]);
         }
     }
 }

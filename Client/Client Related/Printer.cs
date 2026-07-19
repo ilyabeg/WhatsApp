@@ -45,19 +45,5 @@ namespace Client.Clients
             else
                 Console.WriteLine("\t- None.");
         }
-
-        public static void PrintList(string intro_message, List<string> list)
-        {
-            Console.WriteLine(intro_message);
-            if (list.Count > 0)
-            {
-                foreach (string str in list)
-                {
-                    Console.WriteLine($"\t- {str}");
-                }
-            }
-            else
-                Console.WriteLine("\t- None.");
-        }
     }
 }
