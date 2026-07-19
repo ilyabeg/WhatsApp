@@ -83,14 +83,20 @@ namespace Client.UDP
             {
                 ["CHAT"] = () => {
                     Console.WriteLine("To broadcast specify the destination as 'ALL' ...");
-                    Printer.PrintList("[SYSTEM] Active Users:", _users);                    
+                    Printer.PrintList("[SYSTEM] Active Users:", _users); 
+                    
                     DataPacket packet = Write();
-                    if (packet != null) SendDataPacket(packet);
+
+                    if (packet != null && _users.Contains(packet.Reciever))
+                        SendDataPacket(packet);
+                    else
+                        Console.WriteLine("[SYSTEM] Error! Couldn't write the Data Packet.");
                 },
                 ["CHAT G"] = () =>
                 {
                     DataPacket packet = Write();
-                    if (packet != null && _users.Contains(packet.Reciever))
+
+                    if (packet != null && GroupChats.groupChats.ContainsKey(packet.Reciever))
                         GroupChats.SendToGroupChat(packet, _client);
                     else
                         Console.WriteLine("[SYSTEM] Error! Couldn't write the Data Packet.");
