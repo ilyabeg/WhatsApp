@@ -56,14 +56,10 @@ namespace Client.UDP
             return message;
         }
 
-        public static void ProcessDataPacket(byte[] recievedBytes, string username)
+        public static void ProcessDataPacket(byte[] recievedBytes)
         {
             DataPacket recievedPacket = TransferData(recievedBytes);
-
-            // if the message is meant for me -> print it, else, ignore it
-            if (recievedPacket.Reciever.Equals(username, StringComparison.OrdinalIgnoreCase) ||
-                recievedPacket.Reciever.Equals("all", StringComparison.OrdinalIgnoreCase))
-                Printer.PrintDataPacket(recievedPacket);
+            Printer.PrintDataPacket(recievedPacket);
         }
     }
 }

@@ -181,7 +181,7 @@ namespace Client.UDP
         {
             try
             {
-                DataPacket.ProcessDataPacket(recievedBytes, _username);
+                DataPacket.ProcessDataPacket(recievedBytes);
             }
             catch
             {
@@ -218,7 +218,7 @@ namespace Client.UDP
 
                 // if broadcast handler couldn't handle the broadcast, try to process it as a Data Packet
                 if (executed_option == 0)
-                    DataPacket.ProcessDataPacket(recievedBytes, _username);
+                    DataPacket.ProcessDataPacket(recievedBytes);
 
                 // if new user added, send him my name so he knows I exist and all existing group chats.
                 if (executed_option == 1)
@@ -254,13 +254,19 @@ namespace Client.UDP
 
         /// <summary>
         /// Sends datapacket as bytes to remote user (unicast)
-        /// </summary>
+        /// </summary> 
         /// <param name="packet"></param>
         private void SendDataPacket(DataPacket packet)
         {
             string datapacket = JsonSerializer.Serialize(packet);
-            byte[] buffer = Encoding.UTF8.GetBytes(datapacket);
-            _client.Send(buffer, buffer.Length, _users[packet.Reciever]);
+
+            if (packet.Reciever.Equals("all", StringComparison.OrdinalIgnoreCase))
+                MulticastGroup.SendToMulticastGroup(datapacket, _client);
+            else
+            {
+                byte[] buffer = Encoding.UTF8.GetBytes(datapacket);
+                _client.Send(buffer, buffer.Length, _users[packet.Reciever]);
+            }            
         }
     }
 }
