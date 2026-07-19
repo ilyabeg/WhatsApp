@@ -3,7 +3,6 @@ using Client.Interfaces;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Text.Json;
 
 namespace Client.UDP
@@ -96,17 +95,17 @@ namespace Client.UDP
                 {
                     DataPacket packet = Write();
 
-                    if (packet != null && GroupChats.groupChats.ContainsKey(packet.Reciever))
+                    if (packet != null && GroupChats.groupChats.Contains(packet.Reciever))
                         GroupChats.SendToGroupChat(packet, _client);
                     else
                         Console.WriteLine("[SYSTEM] Error! Couldn't write the Data Packet.");
                 },
                 ["NEW G"] = () =>
                 {
-                    var newGroup = GroupChats.CreateNewGroup(_client);
+                    var newGroupName = GroupChats.CreateNewGroup(_client);
 
                     // broadcast the new group so all clients add it to their local memmory
-                    if (newGroup.groupName != null && newGroup.groupIP != null)
+                    if (newGroupName != null)
                     {
                         string newGroupBroadcast = $"$ADD_GROUPS_SIGNAL$#{GroupChats.GetGroups()}";
                         MulticastGroup.SendToMulticastGroup(newGroupBroadcast, _client);
