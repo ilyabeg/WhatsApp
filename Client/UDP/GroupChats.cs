@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
@@ -14,14 +13,18 @@ namespace Client.UDP
         public static List<string> groupChats { get; private set; } = new List<string>();
         private static readonly int _buffer_size = 4096;
 
+        private static readonly object _lock = new object();
+
         public static string CreateNewGroup(UdpClient client)
         {
             string? name = null;
             try
             {
-                name = InputGroupName();
-
-                groupChats.Add(name);
+                lock (_lock)
+                {
+                    name = InputGroupName();
+                    groupChats.Add(name);
+                }                
                 client.JoinMulticastGroup(GenerateIP(name));
 
                 Console.WriteLine($"[SYSTEM] Group {name} successfuly created");

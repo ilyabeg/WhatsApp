@@ -54,6 +54,7 @@ namespace Client.TCP
             {   
                 // broadcast to everyone that this user disconnected
                 MulticastGroup.SendToMulticastGroup($"$DISCONNECT_USER_SIGNAL$#{_username}#{_listener.LocalEndpoint}", _broadcast_helper);
+                TcpClientHandler.DisposeConnections(); // dispose all of the connections to this client
             }
 
             // return false to let normal OS termination continue
@@ -123,7 +124,7 @@ namespace Client.TCP
             {
                 string selected_user = StringParser.ParseRemoteUser(message);
                 string actualMessage = StringParser.ParseActualMsg(message);
-                TcpClientHandler.ConnectAndSend(_users[selected_user], actualMessage, _username); // connect and send to the user                              
+                TcpClientHandler.ConnectAndSend(selected_user, _users[selected_user], actualMessage, _username); // connect and send to the user                              
             }
             catch (Exception e)
             {

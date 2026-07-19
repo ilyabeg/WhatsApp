@@ -1,4 +1,6 @@
 ﻿using Client.Clients;
+using Client.Interfaces;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -8,16 +10,38 @@ namespace Client.TCP
     internal class TcpClientHandler
     {
         private static readonly int _buffer_size = 4096;
+        private static ConcurrentDictionary<string, TcpClient> _open_connections = new ConcurrentDictionary<string, TcpClient>();
 
-        public static void ConnectAndSend(IPEndPoint remoteEP, string message, string author)
+        public static void ConnectAndSend(string remoteUsername, IPEndPoint remoteEP, string message, string author)
         {
-            using TcpClient client = new TcpClient(); // make new client
-            client.Connect(remoteEP); // connect to the remote user
+            try
+            {
+                TcpClient remote_client;
+                if (_open_connections.ContainsKey(remoteUsername))
+                {
+                    remote_client = _open_connections[remoteUsername];
+                }
+                else
+                {
+                    remote_client = new TcpClient(); // make new client
+                    remote_client.Connect(remoteEP); // connect to the remote user
+                    _open_connections.TryAdd(remoteUsername, remote_client);
+                }
 
-            using NetworkStream stream = client.GetStream(); // open new stream
+                NetworkStream stream = remote_client.GetStream();
 
-            byte[] buffer = Encoding.UTF8.GetBytes($"({author}): {message}");
-            stream.Write(buffer, 0, buffer.Length);
+                byte[] buffer = Encoding.UTF8.GetBytes($"({author}): {message}");
+                stream.Write(buffer, 0, buffer.Length);
+            }
+            catch (Exception e)
+            {
+                // if writing to the stream failed, dispose the client.
+                Console.WriteLine($"[SYSTEM] Error! Couldn't write to client due to: {e.Message}");
+                if (_open_connections.TryRemove(remoteUsername, out TcpClient client))
+                {
+                    client.Dispose();
+                }
+            }
         }
 
         public static void HandleRemoteClient(TcpClient client)
@@ -39,6 +63,14 @@ namespace Client.TCP
             catch (Exception e)
             {
                 Console.WriteLine($"Error! Connection to remote user lost due to: {e.Message}");
+            }
+        }
+
+        public static void DisposeConnections()
+        {
+            foreach (TcpClient client in _open_connections.Values)
+            {
+                client?.Dispose();
             }
         }
     }
