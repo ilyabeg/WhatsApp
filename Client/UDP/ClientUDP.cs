@@ -90,7 +90,10 @@ namespace Client.UDP
                 ["CHAT G"] = () =>
                 {
                     DataPacket packet = Write();
-                    if (packet != null) GroupChats.SendToGroupChat(packet, _client);
+                    if (packet != null && _users.Contains(packet.Reciever))
+                        GroupChats.SendToGroupChat(packet, _client);
+                    else
+                        Console.WriteLine("[SYSTEM] Error! Couldn't write the Data Packet.");
                 },
                 ["NEW G"] = () =>
                 {
