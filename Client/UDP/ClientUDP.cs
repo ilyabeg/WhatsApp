@@ -87,7 +87,7 @@ namespace Client.UDP
                     
                     DataPacket packet = Write();
 
-                    if (packet != null && _users.Contains(packet.Reciever))
+                    if (packet != null && (_users.Contains(packet.Reciever) || packet.Reciever.Equals("all", StringComparison.OrdinalIgnoreCase)))
                         SendDataPacket(packet);
                     else
                         Console.WriteLine("[SYSTEM] Error! Couldn't write the Data Packet.");
