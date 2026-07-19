@@ -118,8 +118,16 @@ namespace Client.UDP
                 return;
             }
 
-            client.DropMulticastGroup(groupChats[name]);
-            Console.WriteLine($"[SYSTEM] You have left the group {name} successfuly.");
+            try
+            {
+                client.DropMulticastGroup(groupChats[name]);
+                Console.WriteLine($"[SYSTEM] You have left the group {name} successfuly.");
+            }
+            catch
+            {
+                Console.WriteLine($"[SYSTEM] Error! You are not a member of group {name}.");
+
+            }
         }        
 
         private static void DisplayGroups()
