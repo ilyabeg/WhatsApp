@@ -44,7 +44,7 @@ namespace Client.UDP
             _client = new UdpClient(new IPEndPoint(IPAddress.Any, 0)); // bind to any port and ip
             Task.Run(Listen); // run user listener task in the background
 
-            _username = UsernameAuthorizer.GetUsername(_listener);
+            _username = UsernameAuthorizer.GetUsername();
 
             InitOptions();
 
@@ -169,11 +169,7 @@ namespace Client.UDP
         {
             try
             {
-                string recieved = Encoding.UTF8.GetString(recievedBytes);
-                if (recieved.Equals("$USERNAME_IS_TAKEN$"))
-                    UsernameAuthorizer.FreeUsername = false;
-                else
-                    DataPacket.ProcessDataPacket(recievedBytes);
+                DataPacket.ProcessDataPacket(recievedBytes);
             }
             catch
             {
@@ -206,8 +202,6 @@ namespace Client.UDP
         {
             try
             {
-                if (CheckUsernameBroadcast(receivedBytes, remoteEndPoint)) return;
-
                 int executed_option = BroadcastHandlerUDP.HandleBroadcast(receivedBytes, remoteEndPoint, _users);
                 // if broadcast handler couldn't handle the broadcast, try to process it as a Data Packet
                 if (executed_option == 0)
@@ -229,31 +223,6 @@ namespace Client.UDP
                 Printer.PrintBytes(receivedBytes);
             }
         }        
-
-        /// <summary>
-        /// Checks to see if the broadcast was the USERNAME CHECK SIGNAL and return true if so, else returns false
-        /// </summary>
-        /// <param name="receivedBytes"></param>
-        /// <returns></returns>
-        private bool CheckUsernameBroadcast(byte[] receivedBytes, IPEndPoint remoteEndPoint)
-        {
-            string str = Encoding.UTF8.GetString(receivedBytes);
-            if (str.StartsWith("$CHECK_USERNAME_SIGNAL$"))
-            {
-                string[] splitted = str.Split('#');
-                string username = splitted[1];
-
-                // tell client that the username taken
-                if (username.Equals(_username))
-                {
-                    byte[] buffer = Encoding.UTF8.GetBytes("$USERNAME_IS_TAKEN$");
-                    _client.Send(buffer, buffer.Length, remoteEndPoint);
-                }
-
-                return true;
-            }
-            return false;
-        }
 
         private DataPacket? Write()
         {
