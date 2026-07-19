@@ -39,7 +39,7 @@ namespace Client.UDP
 
             _users = new Dictionary<string, IPEndPoint>();
             
-            _client = new UdpClient(new IPEndPoint(IPAddress.Any, 0)); // bind to any port
+            _client = new UdpClient(new IPEndPoint(IPAddress.Any, 0)); // bind to any port and ip
             _username = GetUserName();
 
             InitOptions();
@@ -99,19 +99,19 @@ namespace Client.UDP
                     DataPacket packet = Write();
 
                     if (packet != null && GroupChats.groupChats.Contains(packet.Reciever))
-                        GroupChats.SendToGroupChat(packet, _client);
+                        GroupChats.SendToGroupChat(packet, _listener);
                     else
                         Console.WriteLine("[SYSTEM] Error! Couldn't write the Data Packet.");
                 },
                 ["NEW G"] = () =>
                 {
-                    var newGroupName = GroupChats.CreateNewGroup(_client);
+                    var newGroupName = GroupChats.CreateNewGroup(_listener); // <- make listener create the group because he listens to port 20000
 
                     // broadcast the new group so all clients add it to their local memmory
                     if (newGroupName != null)
                     {
                         string newGroupBroadcast = $"$ADD_GROUPS_SIGNAL$#{GroupChats.GetGroups()}";
-                        MulticastGroup.SendToMulticastGroup(newGroupBroadcast, _client);
+                        MulticastGroup.SendToMulticastGroup(newGroupBroadcast, _listener);
                     }
                 },
                 ["JOIN G"] = () => GroupChats.JoinGroup(_client),
@@ -141,7 +141,7 @@ namespace Client.UDP
             Task.Run(Listen);             // run user listener task in the background
             Task.Run(ListenForBroadcast); // run broadcast listener task in the background
 
-            MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}#{_client.Client.LocalEndPoint}" , _client);
+            MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}" , _client);
             Thread.Sleep(250);
             Printer.PrintDictKeys("[SYSTEM] Active Users:", _users);
 
@@ -201,7 +201,7 @@ namespace Client.UDP
                 while (true)
                 {
                     byte[] recievedBytes = _listener.Receive(ref remoteEndPoint);
-                    ReadBroadcast(recievedBytes);
+                    ReadBroadcast(recievedBytes, remoteEndPoint);
                 }
             }
             catch (Exception e)
@@ -210,11 +210,11 @@ namespace Client.UDP
             }
         }
 
-        private void ReadBroadcast(byte[] recievedBytes)
+        private void ReadBroadcast(byte[] recievedBytes, IPEndPoint remoteEndPoint)
         {
             try
             {
-                int executed_option = BroadcastHandlerUDP.HandleBroadcast(recievedBytes, _users);
+                int executed_option = BroadcastHandlerUDP.HandleBroadcast(recievedBytes, remoteEndPoint, _users);
 
                 // if broadcast handler couldn't handle the broadcast, try to process it as a Data Packet
                 if (executed_option == 0)
@@ -223,7 +223,7 @@ namespace Client.UDP
                 // if new user added, send him my name so he knows I exist and all existing group chats.
                 if (executed_option == 1)
                 {
-                    MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}#{_client.Client.LocalEndPoint}", _client);
+                    MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}", _client);
 
                     string existing_groups = GroupChats.GetGroups();
                     if (existing_groups != null)
@@ -232,7 +232,7 @@ namespace Client.UDP
             }
             catch
             {
-                Console.WriteLine("[SYSTEM] Error! Couldn't process broadcast.");
+                //Console.WriteLine("[SYSTEM] Error! Couldn't process broadcast.");
                 Printer.PrintBytes(recievedBytes);
             }
         }        
