@@ -29,7 +29,7 @@ namespace Client.UDP
         private static ConsoleEventDelegate? _handler;
 
         // import winAPI dll to use the SetConsoleCtrlHandler method
-        [DllImport("kernel32.dll", SetLastError = true)]        
+        [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool SetConsoleCtrlHandler(ConsoleEventDelegate callback, bool add);
 
 
@@ -40,11 +40,11 @@ namespace Client.UDP
             _listeningEndPoint = new IPEndPoint(IPAddress.Any, _listening_port);
             InitListener();
             Task.Run(ListenForBroadcast); // run broadcast listener task in the background
-            
+
             _client = new UdpClient(new IPEndPoint(IPAddress.Any, 0)); // bind to any port and ip
             Task.Run(Listen); // run user listener task in the background
 
-            _username = UsernameAuthorizer.GetUsername();
+            _username = UsernameAuthorizer.GetUsername(_client);
 
             InitOptions();
 
@@ -89,8 +89,8 @@ namespace Client.UDP
             {
                 ["CHAT"] = () => {
                     Console.WriteLine("To broadcast specify the destination as 'ALL' ...");
-                    Printer.PrintDictKeys("[SYSTEM] Active Users:", _users); 
-                    
+                    Printer.PrintDictKeys("[SYSTEM] Active Users:", _users);
+
                     DataPacket packet = Write();
 
                     if (packet != null && (_users.ContainsKey(packet.Reciever) || packet.Reciever.Equals("all", StringComparison.OrdinalIgnoreCase)))
@@ -129,7 +129,7 @@ namespace Client.UDP
         {
             Printer.PrintOptions();
 
-            MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}" , _client);
+            MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}", _client);
             Thread.Sleep(250);
             Printer.PrintDictKeys("[SYSTEM] Active Users:", _users);
 
@@ -156,7 +156,7 @@ namespace Client.UDP
                 while (true)
                 {
                     byte[] recievedBytes = _client.Receive(ref remoteEndPoint);
-                    Read(recievedBytes, remoteEndPoint);                    
+                    Read(recievedBytes, remoteEndPoint);
                 }
             }
             catch (Exception e)
@@ -168,8 +168,12 @@ namespace Client.UDP
         private void Read(byte[] recievedBytes, IPEndPoint remoteEP)
         {
             try
-            {
-                DataPacket.ProcessDataPacket(recievedBytes);
+            {   // block user from taking already existing name 
+                string recieved = Encoding.UTF8.GetString(recievedBytes);
+                if (recieved.Equals("$USERNAME_IS_TAKEN$"))
+                    UsernameAuthorizer.FreeUsername = false;
+                else
+                    DataPacket.ProcessDataPacket(recievedBytes);
             }
             catch
             {
@@ -202,6 +206,8 @@ namespace Client.UDP
         {
             try
             {
+                if (CheckUsernameBroadcast(receivedBytes, remoteEndPoint)) return;
+
                 int executed_option = BroadcastHandlerUDP.HandleBroadcast(receivedBytes, remoteEndPoint, _users);
                 // if broadcast handler couldn't handle the broadcast, try to process it as a Data Packet
                 if (executed_option == 0)
@@ -222,14 +228,39 @@ namespace Client.UDP
                 //Console.WriteLine("[SYSTEM] Error! Couldn't process broadcast.");
                 Printer.PrintBytes(receivedBytes);
             }
-        }        
+        }
+
+        /// <summary>
+        /// Checks to see if the broadcast was the USERNAME CHECK SIGNAL and return true if so, else returns false
+        /// </summary>
+        /// <param name="receivedBytes"></param>
+        /// <returns></returns>
+        private bool CheckUsernameBroadcast(byte[] receivedBytes, IPEndPoint remoteEndPoint)
+        {
+            string str = Encoding.UTF8.GetString(receivedBytes);
+            if (str.StartsWith("$CHECK_USERNAME_SIGNAL$"))
+            {
+                string[] splitted = str.Split('#');
+                string username = splitted[1];
+
+                // tell client that the username taken
+                if (username.Equals(_username))
+                {
+                    byte[] buffer = Encoding.UTF8.GetBytes("$USERNAME_IS_TAKEN$");
+                    _client.Send(buffer, buffer.Length, remoteEndPoint);
+                }
+
+                return true;
+            }
+            return false;
+        }
 
         private DataPacket? Write()
         {
             try
             {
                 DataPacket packet = DataPacket.CreateNew();
-                packet.Author = _username; 
+                packet.Author = _username;
                 return packet;
             }
             catch (Exception e)
@@ -253,7 +284,7 @@ namespace Client.UDP
             {
                 byte[] buffer = Encoding.UTF8.GetBytes(datapacket);
                 _client.Send(buffer, buffer.Length, _users[packet.Reciever]);
-            }            
+            }
         }
     }
 }
