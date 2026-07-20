@@ -4,6 +4,18 @@
              xmlns:local="clr-namespace:WhatsAppUI"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+
+        <!-- Make Master Dictionary to hold all external custom resources -->
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+
+                <!-- Custom resource Dictionaries -->
+                <ResourceDictionary Source="/View/Styles/Colors.xaml" />
+                <ResourceDictionary Source="/View/Styles/ColorBrushes.xaml" />
+                <ResourceDictionary Source="/View/Styles/ButtonStyles.xaml" />
+
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+        
     </Application.Resources>
 </Application>

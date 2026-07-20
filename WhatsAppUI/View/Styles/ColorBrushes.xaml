@@ -1,0 +1,27 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Text colors -->
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="{StaticResource Darkest}" />
+    <SolidColorBrush x:Key="BtnTextBrush" Color="{StaticResource Brightest}" />
+    <SolidColorBrush x:Key="PlaceHolderTextBrush" Color="{StaticResource DarkGrey}" />
+    <SolidColorBrush x:Key="HeadersTextBrush" Color="{StaticResource Brightest}" />
+
+    <!-- Background colors -->
+    <SolidColorBrush x:Key="ChatBackgroundBrush" Color="{StaticResource Brightest}" />
+    <SolidColorBrush x:Key="InputBackgroundBrush" Color="{StaticResource Brightest}" />
+    <SolidColorBrush x:Key="BtnBackgroundBrush" Color="{StaticResource Tan}" />
+    <SolidColorBrush x:Key="InputFooterBrush" Color="{StaticResource RichBrown}" />
+
+    <!-- Header colors -->
+    <SolidColorBrush x:Key="UsernameHeaderBrush" Color="{StaticResource RichBrown}" />
+    <SolidColorBrush x:Key="AllUsersHeaderBrush" Color="{StaticResource RichBrown}" />
+
+    <!-- Users List color -->
+    <SolidColorBrush x:Key="UsersListBrush" Color="{StaticResource Tan}" />
+
+    <!-- Message Bubbles colors -->
+    <SolidColorBrush x:Key="MyMessageBubbleBrush" Color="{StaticResource LightBlue}" />
+    <SolidColorBrush x:Key="RemoteMessageBubbleBrush" Color="{StaticResource DarkBlue}" />
+
+</ResourceDictionary>
