@@ -8,4 +8,10 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="View\ViewModels\" />
+    <Folder Include="View\Styles\" />
+    <Folder Include="View\UserControls\" />
+  </ItemGroup>
+
 </Project>
