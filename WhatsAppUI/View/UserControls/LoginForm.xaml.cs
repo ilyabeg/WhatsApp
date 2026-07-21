@@ -16,7 +16,7 @@ namespace WhatsAppUI.View.UserControls
             string username = UsernameInfo.Text;
             UsernameInfo.Clear();
 
-            if (false) // <- Username Authorization...
+            if (false) // <- Username Authorization from Model...
             {
                 LoginTxt.Text = "Username already taken. Please re-enter:";
             }
