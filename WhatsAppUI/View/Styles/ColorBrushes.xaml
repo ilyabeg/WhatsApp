@@ -8,12 +8,13 @@
     <SolidColorBrush x:Key="HeadersTextBrush" Color="{StaticResource Brightest}" />
 
     <!-- Background colors -->
-    <SolidColorBrush x:Key="ChatBackgroundBrush" Color="{StaticResource Brightest}" />
+    <SolidColorBrush x:Key="ChatBackgroundBrush" Color="{StaticResource SmoothTan}" />
     <SolidColorBrush x:Key="InputBackgroundBrush" Color="{StaticResource Brightest}" />
     <SolidColorBrush x:Key="BtnBackgroundBrush" Color="{StaticResource Tan}" />
     <SolidColorBrush x:Key="InputFooterBrush" Color="{StaticResource RichBrown}" />
     <SolidColorBrush x:Key="LoginFormBrush" Color="{StaticResource RichBrown}" />
-
+    <SolidColorBrush x:Key="UsernameInputBrush" Color="{StaticResource Brightest}" />
+    
     <!-- Header colors -->
     <SolidColorBrush x:Key="UsernameHeaderBrush" Color="{StaticResource RichBrown}" />
     <SolidColorBrush x:Key="AllUsersHeaderBrush" Color="{StaticResource RichBrown}" />
