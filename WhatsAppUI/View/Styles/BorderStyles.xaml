@@ -3,12 +3,10 @@
 
     <!-- Circular border -->
     <Style x:Key="MessageInputBorderStyle" TargetType="Border" >
-        <Setter Property="Height" Value="40" />
-        <Setter Property="Width" Value="695" />
-        <Setter Property="Margin" Value="15,0,0,0" />
-        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="Margin" Value="10,15,0,15" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="Background" Value="White" />
-        <Setter Property="CornerRadius" Value="18" />
+        <Setter Property="CornerRadius" Value="13" />
     </Style>
 
 </ResourceDictionary>

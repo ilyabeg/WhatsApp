@@ -4,6 +4,9 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WhatsAppUI"
+        
+        xmlns:UserControls="clr-namespace:WhatsAppUI.View.UserControls"
+        
         mc:Ignorable="d"
         Title="WhatsApp" Height="450" Width="800">
        
@@ -11,22 +14,29 @@
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="150" />
-            <ColumnDefinition/>
+            <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
         <Grid.RowDefinitions>
             <RowDefinition Height="40"/>
-            <RowDefinition />
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
+
+        <UserControls:ActiveUsersHeader Grid.Row="0" Grid.Column="0" />
+        <UserControls:ActiveUsersList Grid.Row="1" Grid.Column="0" />
+
+        <UserControls:UserHeader Grid.Row="0" Grid.Column="1" />
 
         <!-- Chat Board Grid -->
         <Grid Grid.Row="1" Grid.Column="1">
-            
             <Grid.RowDefinitions>
-                <RowDefinition />
-                <RowDefinition Height="50" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            
+
+            <UserControls:ChatBoard Grid.Row="0" Grid.Column="0" />
+            <UserControls:MessageBoxFooter Grid.Row="1" Grid.Column="0" />
+
         </Grid>
     </Grid>
                   

@@ -8,18 +8,26 @@
              d:DesignHeight="70" d:DesignWidth="800">
 
     <Grid Background="{StaticResource InputFooterBrush}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
 
-        <Border Style="{StaticResource MessageInputBorderStyle}">
+        <Border Grid.Column="0" Style="{StaticResource MessageInputBorderStyle}">
             <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-                <TextBlock Name="PlaceHolderTxt" Style="{StaticResource PlaceHolderStyle}" />
-                <TextBox Name="InputTxt" Style="{StaticResource MessageInput}"/>
-                <Button Name="btnClear" Style="{StaticResource ClearButtonStyle}"/>
-            
+                <TextBlock Grid.Column="0" Name="PlaceHolderTxt" Style="{StaticResource PlaceHolderStyle}" />
+                <TextBox Grid.Column="0" Name="InputTxt" Style="{StaticResource MessageInput}" />
+
+                <Button Grid.Column="1" Name="btnClear" Style="{StaticResource ClearButtonStyle}" />
             </Grid>
         </Border>
 
-        <Button Name="btnSend" Style="{StaticResource SendButtonStyle}" />
+        <Button Grid.Column="1" Name="btnSend" Style="{StaticResource SendButtonStyle}" />
     </Grid>
     
 </UserControl>
