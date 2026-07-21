@@ -9,7 +9,7 @@
         
         mc:Ignorable="d"
         Title="WhatsApp"
-        Height="450" 
+        Height="490" 
         Width="800"
         ResizeMode="NoResize">
        
