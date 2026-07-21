@@ -15,9 +15,14 @@
             <RowDefinition />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Name="LoginTxt" Style="{StaticResource LoginTextBlockStyle}" />
+        <Viewbox Grid.Row="0" Stretch="Uniform" Margin="10">
+            <TextBlock Name="LoginTxt" Style="{StaticResource LoginTextBlockStyle}" />
+        </Viewbox>
+        
         <TextBox Grid.Row="1" Name="UsernameInfo" Style="{StaticResource UsernameInput}" />
-        <Button Grid.Row="2" Name="btnRegister" Style="{StaticResource RegisterButtonStye}"/>
+        
+        <Button Grid.Row="2" Name="btnRegister" Style="{StaticResource RegisterButtonStye}"
+                Click="btnRegister_Click"/>
 
     </Grid>
     
