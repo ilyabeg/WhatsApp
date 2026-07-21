@@ -1,4 +1,5 @@
-﻿using Client.Clients;
+﻿using Client.Client_Related;
+using Client.Clients;
 using Client.Interfaces;
 using System.Net;
 using System.Net.Sockets;
@@ -12,8 +13,10 @@ namespace Client.TCP
         // each tcp client is part client part server
 
         private string _username;
-        private TcpListener _listener;        
+        private TcpListener _listener;     
+        
         private UdpClient _broadcast_helper; // udp broadcast helper to let every user know who is active
+        private UdpClient _login_client;     // udp broadcast helper to let every user know who is active
 
         private Dictionary<string, IPEndPoint> _users;
 
@@ -29,12 +32,18 @@ namespace Client.TCP
 
         public ClientTCP()
         {
+            _users = new Dictionary<string, IPEndPoint>();
+
             InitListener();
             InitBroadcastHelper();
-                       
-            _username = GetUserName();
 
-            _users = new Dictionary<string, IPEndPoint>();
+            Task.Run(Listen);            // <- run TCP listener task in the background
+            Task.Run(RecieveBroadcasts); // <- run UDP broadcast listener task in the background
+
+            _login_client = new UdpClient(new IPEndPoint(IPAddress.Any, 0)); // bind to any port and ip
+            Task.Run(() => TCPLoginHandler.LoginListener(_login_client));    // <- run login UDP listener task in the background            
+
+            _username = UsernameAuthorizer.GetUsername(_login_client);            
 
             // make new event delegate that runs the event callback 
             _handler = new ConsoleEventDelegate(ConsoleEventCallback);
@@ -76,28 +85,12 @@ namespace Client.TCP
         private void InitListener()
         {
             // bind to any free port
-            _listener = new TcpListener(IPAddress.Loopback, 0);
+            _listener = new TcpListener(IPAddress.Loopback, 0);            
             _listener.Start();
         }
 
-        private string GetUserName()
-        {
-            Console.WriteLine("[SYSTEM] Before starting to chat, enter your user name:");
-            string username = Console.ReadLine();
-
-            while (string.IsNullOrWhiteSpace(username))
-            {
-                Console.WriteLine("[SYSTEM] Please enter valid username:");
-                username = Console.ReadLine();
-            }
-            return username;
-        }
-
         public void Start()
-        {
-            Task.Run(Listen);            // run listen task in the background
-            Task.Run(RecieveBroadcasts); // run broadcast reciever task
-
+        {            
             BroadcastUsername();
             Thread.Sleep(250);
 
@@ -154,6 +147,9 @@ namespace Client.TCP
             }            
         }
 
+        /// <summary>
+        /// UDP Broadcast listener that listens for broadcasted messaged on the Multicast group port
+        /// </summary>
         private void RecieveBroadcasts()
         {
             IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0); // listen to any remote user
@@ -173,17 +169,45 @@ namespace Client.TCP
 
         private void ReadBroadcast(byte[] recievedBytes, IPEndPoint remoteEndPoint)
         {
-            string recievedMessage = Encoding.UTF8.GetString(recievedBytes);
-
+            if (CheckUsernameBroadcast(recievedBytes, remoteEndPoint)) return;
+           
             int executed_option = BroadcastHandlerTCP.HandleBroadcast(recievedBytes, ref _users);
 
             // if BroadcastHandler couldn't handle the broadcast, print it out
             if (executed_option == 0)
+            {
+                string recievedMessage = Encoding.UTF8.GetString(recievedBytes);
                 Console.WriteLine($"[SYSTEM] Recieved -> {recievedMessage} from broadcast.");
+            }            
 
             if (executed_option == 1)
                 BroadcastUsername();
-        }       
+        }
+
+        /// <summary>
+        /// Checks to see if the broadcast was the USERNAME CHECK SIGNAL and return true if so, else returns false
+        /// </summary>
+        /// <param name="receivedBytes"></param>
+        /// <returns></returns>
+        private bool CheckUsernameBroadcast(byte[] receivedBytes, IPEndPoint remoteEndPoint)
+        {
+            string str = Encoding.UTF8.GetString(receivedBytes);
+            if (str.StartsWith("$CHECK_USERNAME_SIGNAL$"))
+            {
+                string[] splitted = str.Split('#');
+                string username = splitted[1];
+
+                // tell client that the username taken
+                if (username.Equals(_username))
+                {
+                    byte[] buffer = Encoding.UTF8.GetBytes("$USERNAME_IS_TAKEN$");
+                    _broadcast_helper.Send(buffer, buffer.Length, remoteEndPoint);
+                }
+
+                return true;
+            }
+            return false;
+        }
 
         private void BroadcastUsername()
         {
