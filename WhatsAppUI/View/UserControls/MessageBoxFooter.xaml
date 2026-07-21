@@ -21,13 +21,14 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0" Name="PlaceHolderTxt" Style="{StaticResource PlaceHolderStyle}" />
-                <TextBox Grid.Column="0" Name="InputTxt" Style="{StaticResource MessageInput}" />
+                
+                <TextBox Grid.Column="0" Name="InputTxt" Style="{StaticResource MessageInput}" TextChanged="InputTxt_TextChanged" />
 
-                <Button Grid.Column="1" Name="btnClear" Style="{StaticResource ClearButtonStyle}" />
+                <Button Grid.Column="1" Name="btnClear" Style="{StaticResource ClearButtonStyle}" Click="btnClear_Click" />
             </Grid>
         </Border>
 
-        <Button Grid.Column="1" Name="btnSend" Style="{StaticResource SendButtonStyle}" />
+        <Button Grid.Column="1" Name="btnSend" Style="{StaticResource SendButtonStyle}" Click="btnSend_Click" />
     </Grid>
     
 </UserControl>

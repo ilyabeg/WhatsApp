@@ -1,26 +1,38 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace WhatsAppUI.View.UserControls
 {
-    /// <summary>
-    /// Interaction logic for MessageBoxFooter.xaml
-    /// </summary>
     public partial class MessageBoxFooter : UserControl
     {
         public MessageBoxFooter()
         {
             InitializeComponent();
+        }
+
+        private void btnClear_Click(object sender, RoutedEventArgs e)
+        {
+            InputTxt.Clear();
+            InputTxt.Focus(); // focus text bar after clear
+        }
+
+        private void InputTxt_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            // show place holder text when text box is empty and hide when not empty
+            if (string.IsNullOrEmpty(InputTxt.Text))
+                PlaceHolderTxt.Visibility = Visibility.Visible;
+            else
+                PlaceHolderTxt.Visibility = Visibility.Hidden;
+        }
+
+        private void btnSend_Click(object sender, RoutedEventArgs e)
+        {
+            string message = InputTxt.Text;
+
+            if (!string.IsNullOrEmpty(message))
+            {
+                // send to remote user...
+            }
         }
     }
 }
