@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:WhatsAppUI.View.UserControls"
              mc:Ignorable="d" 
-             Height="70" d:DesignWidth="800">
+             d:DesignHeight="70" d:DesignWidth="800">
 
     <Grid Background="{StaticResource InputFooterBrush}">
 
