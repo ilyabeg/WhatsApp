@@ -9,5 +9,16 @@
         <Setter Property="FontSize" Value="17" />
         <Setter Property="Foreground" Value="{StaticResource PlaceHolderTextBrush}" />
     </Style>
-    
+
+    <Style x:Key="UsernameBlockStyle" TargetType="TextBlock" >
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Margin" Value="20,0,20,0" />
+        <Setter Property="Text" Value="username0000" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="FontSize" Value="35" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontStyle" Value="Italic" />
+        <Setter Property="Foreground" Value="{StaticResource HeadersTextBrush}" />
+    </Style>
+
 </ResourceDictionary>
