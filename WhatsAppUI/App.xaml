@@ -10,9 +10,20 @@
             <ResourceDictionary.MergedDictionaries>
 
                 <!-- Custom resource Dictionaries -->
+                
+                <!-- Colors and Brushes -->
                 <ResourceDictionary Source="/View/Styles/Colors.xaml" />
                 <ResourceDictionary Source="/View/Styles/ColorBrushes.xaml" />
+                
+                <!-- Buttons -->
                 <ResourceDictionary Source="/View/Styles/ButtonStyles.xaml" />
+                
+                <!-- Text Related -->
+                <ResourceDictionary Source="/View/Styles/TextBlockStyles.xaml" />
+                <ResourceDictionary Source="/View/Styles/TextBoxStyles.xaml" />
+                
+                <!-- Borders -->
+                <ResourceDictionary Source="/View/Styles/BorderStyles.xaml" />
 
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>

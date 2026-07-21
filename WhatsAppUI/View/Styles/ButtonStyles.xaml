@@ -15,7 +15,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border Background="{TemplateBinding Background}" CornerRadius="20">
+                    <Border Background="{TemplateBinding Background}" CornerRadius="18">
                         <Border.Effect>
                             <DropShadowEffect 
                                 Color="{StaticResource Darkest}"

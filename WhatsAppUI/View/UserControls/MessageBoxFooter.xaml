@@ -8,18 +8,16 @@
              Height="70" d:DesignWidth="800">
 
     <Grid Background="{StaticResource InputFooterBrush}">
-        <Grid Height="40" Width="695" Margin="15,0,0,0" HorizontalAlignment="Left" Background="White">
+
+        <Border Style="{StaticResource MessageInputBorderStyle}">
+            <Grid>
+
+                <TextBlock Name="PlaceHolderTxt" Style="{StaticResource PlaceHolderStyle}" />
+                <TextBox Name="InputTxt" Style="{StaticResource MessageInput}"/>
+                <Button Name="btnClear" Style="{StaticResource ClearButtonStyle}"/>
             
-            <TextBlock Name="PlaceHolderTxt" Background="Transparent" Margin="5,0,35,0"
-                    Text="Enter Message Here..." VerticalAlignment="Center"
-                    FontSize="17" Foreground="{StaticResource PlaceHolderTextBrush}" />
-
-            <TextBox Name="InputTxt" Background="Transparent" Margin="5,0,30,0"
-                    VerticalContentAlignment="Center" FontSize="17" FontWeight="SemiBold"
-                    Foreground="{StaticResource PrimaryTextBrush}"/>
-
-            <Button Name="btnClear" Style="{StaticResource ClearButtonStyle}"/>
-        </Grid>
+            </Grid>
+        </Border>
 
         <Button Name="btnSend" Style="{StaticResource SendButtonStyle}" />
     </Grid>
