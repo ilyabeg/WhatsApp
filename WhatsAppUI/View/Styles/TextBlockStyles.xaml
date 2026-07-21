@@ -32,4 +32,15 @@
         <Setter Property="Foreground" Value="{StaticResource HeadersTextBrush}" />
     </Style>
 
+    <Style x:Key="LoginTextBlockStyle" TargetType="TextBlock" >
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Margin" Value="55,85,55,15" />
+        <Setter Property="Text" Value="Please enter Username:" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="FontSize" Value="45" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource HeadersTextBrush}" />
+    </Style>
+
 </ResourceDictionary>

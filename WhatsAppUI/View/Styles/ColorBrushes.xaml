@@ -12,6 +12,7 @@
     <SolidColorBrush x:Key="InputBackgroundBrush" Color="{StaticResource Brightest}" />
     <SolidColorBrush x:Key="BtnBackgroundBrush" Color="{StaticResource Tan}" />
     <SolidColorBrush x:Key="InputFooterBrush" Color="{StaticResource RichBrown}" />
+    <SolidColorBrush x:Key="LoginFormBrush" Color="{StaticResource RichBrown}" />
 
     <!-- Header colors -->
     <SolidColorBrush x:Key="UsernameHeaderBrush" Color="{StaticResource RichBrown}" />

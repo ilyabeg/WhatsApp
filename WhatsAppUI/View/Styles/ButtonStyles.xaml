@@ -39,5 +39,33 @@
         <Setter Property="Width" Value="30" />
         <Setter Property="Foreground" Value="{StaticResource PlaceHolderTextBrush}" />
     </Style>
-    
+
+    <Style x:Key="RegisterButtonStye" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource BtnBackgroundBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource BtnTextBrush}" />
+        <Setter Property="FontSize" Value="30" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Margin" Value="15,15,15,85" />
+        <Setter Property="Width" Value="150" />
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}" CornerRadius="20">
+                        <Border.Effect>
+                            <DropShadowEffect 
+                            Color="{StaticResource Darkest}"
+                            BlurRadius="8"
+                            Opacity=".5"
+                            ShadowDepth="4"/>
+                        </Border.Effect>
+                        <ContentPresenter Content="Register" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>
