@@ -15,7 +15,18 @@
         <Setter Property="Margin" Value="20,0,20,0" />
         <Setter Property="Text" Value="username0000" />
         <Setter Property="VerticalAlignment" Value="Center" />
-        <Setter Property="FontSize" Value="35" />
+        <Setter Property="FontSize" Value="25" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontStyle" Value="Italic" />
+        <Setter Property="Foreground" Value="{StaticResource HeadersTextBrush}" />
+    </Style>
+
+    <Style x:Key="ActiveUsersBlockStyle" TargetType="TextBlock" >
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Margin" Value="15,0,15,0" />
+        <Setter Property="Text" Value="Active Users &amp; Groups" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="FontSize" Value="25" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="FontStyle" Value="Italic" />
         <Setter Property="Foreground" Value="{StaticResource HeadersTextBrush}" />
