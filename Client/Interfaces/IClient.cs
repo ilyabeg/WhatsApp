@@ -2,6 +2,7 @@
 {
     internal interface IClient
     {
-        public void Start();
+        public void SendUnicastMessage(string remoteClientName, string message);
+        public void Connect();
     }
 }

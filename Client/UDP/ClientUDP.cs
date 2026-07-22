@@ -33,24 +33,29 @@ namespace Client.UDP
         private static extern bool SetConsoleCtrlHandler(ConsoleEventDelegate callback, bool add);
 
 
-        public ClientUDP()
+        public ClientUDP(string username)
         {
+            _username = username;
+
             _users = new Dictionary<string, IPEndPoint>();
 
             _listeningEndPoint = new IPEndPoint(IPAddress.Any, _listening_port);
             InitListener();
             Task.Run(ListenForBroadcast); // run broadcast listener task in the background
 
-            _client = new UdpClient(new IPEndPoint(IPAddress.Any, 0)); // bind to any port and ip
             Task.Run(Listen); // run user listener task in the background
-
-            _username = UsernameAuthorizer.GetUsername(_client);
 
             InitOptions();
 
             // make new event delegate that runs the event callback 
             _handler = new ConsoleEventDelegate(ConsoleEventCallback);
             SetConsoleCtrlHandler(_handler, true);
+        }
+
+        public void Connect()
+        {
+            _client = new UdpClient(new IPEndPoint(IPAddress.Any, 0)); // bind to any port and ip
+
         }
 
         /// <summary>
@@ -85,28 +90,6 @@ namespace Client.UDP
 
         public void InitOptions()
         {
-            _input_option = new Dictionary<string, Action>()
-            {
-                ["CHAT"] = () => {
-                    Console.WriteLine("To broadcast specify the destination as 'ALL' ...");
-                    Printer.PrintDictKeys("[SYSTEM] Active Users:", _users);
-
-                    DataPacket packet = Write();
-
-                    if (packet != null && (_users.ContainsKey(packet.Reciever) || packet.Reciever.Equals("all", StringComparison.OrdinalIgnoreCase)))
-                        SendDataPacket(packet);
-                    else
-                        Console.WriteLine("[SYSTEM] Error! Couldn't write the Data Packet.");
-                },
-                ["CHAT G"] = () =>
-                {
-                    DataPacket packet = Write();
-
-                    if (packet != null && GroupChats.groupChats.Contains(packet.Reciever))
-                        GroupChats.SendToGroupChat(packet, _listener);
-                    else
-                        Console.WriteLine("[SYSTEM] Error! Couldn't write the Data Packet.");
-                },
                 ["NEW G"] = () =>
                 {
                     var newGroupName = GroupChats.CreateNewGroup(_listener); // <- make listener create the group because he listens to port 20000
@@ -120,32 +103,7 @@ namespace Client.UDP
                 },
                 ["JOIN G"] = () => GroupChats.JoinGroup(_client),
                 ["LEAVE G"] = () => GroupChats.LeaveGroup(_client),
-                ["OPTIONS"] = Printer.PrintOptions,
-                ["CLEAR"] = Console.Clear
             };
-        }
-
-        public void Start()
-        {
-            Printer.PrintOptions();
-
-            MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}", _client);
-            Thread.Sleep(250);
-            Printer.PrintDictKeys("[SYSTEM] Active Users:", _users);
-
-            while (true)
-            {
-                string message = Console.ReadLine().Trim().ToUpper();
-                ProcessMessage(message);
-            }
-        }
-
-        private void ProcessMessage(string message)
-        {
-            if (_input_option.ContainsKey(message))
-                _input_option[message].Invoke();
-            else
-                Console.WriteLine("[SYSTEM] Enter valid input.");
         }
 
         private void Listen()

@@ -4,6 +4,7 @@ namespace Client.UDP
 {
     internal class GroupChat : IChatItem
     {
-        public string Name { get; set; }
+        public string ChatItemName { get; set; }
+        public int MembersCount { get; set; }
     }
 }

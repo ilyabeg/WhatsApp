@@ -39,7 +39,7 @@ namespace Client.UDP
         private static string InputGroupName()
         {
             Console.WriteLine("[SYSTEM] Enter Group Chat Name:");
-            string name = Console.ReadLine().Trim();
+            string name;
 
             if (groupChats.Contains(name))
                 throw new Exception($"Group Chat {name} already exists ...");
@@ -99,7 +99,7 @@ namespace Client.UDP
             if (groupChats.Count > 0)
             {
                 Console.WriteLine("[SYSTEM] Write the name of the group you'd like to join:");
-                string name = Console.ReadLine().Trim();
+                string name;
 
                 if (!groupChats.Contains(name))
                 {
