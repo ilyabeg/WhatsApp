@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using Client.Events;
+using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
@@ -7,47 +8,42 @@ using System.Text.Json;
 namespace Client.UDP
 {
     internal class GroupChats
-    {
-        private static readonly int _portNum = 20000;
-        public static List<string> groupChats { get; private set; } = new List<string>();
-        private static readonly int _buffer_size = 4096;
+    {        
+        public Dictionary<string, GroupChat> groupChats { get; private set; } = new Dictionary<string, GroupChat>();
+        private readonly int _buffer_size = 4096;
+        private readonly int _portNum = 20000;
 
-        private static readonly object _lock = new object();
+        private readonly object _lock = new object();
 
-        public static string CreateNewGroup(UdpClient client)
+        public event EventHandler<SystemErrorEventArgs> OnSystemError;
+        public event EventHandler<GroupChangedEventArgs> OnGroupChange;
+
+        public void CreateNewGroup(UdpClient client, string name)
         {
-            string? name = null;
             try
-            {
-                lock (_lock)
+            {               
+                if (!groupChats.ContainsKey(name))
                 {
-                    name = InputGroupName();
-                    groupChats.Add(name);
-                }                
-                client.JoinMulticastGroup(GenerateIP(name));
+                    lock (_lock)
+                    {
+                        GroupChat group = new GroupChat(name);
+                        client.JoinMulticastGroup(GenerateIP(name));
+                        group.MembersCount++;
 
-                Console.WriteLine($"[SYSTEM] Group {name} successfuly created");
-                Console.WriteLine("[SYSTEM] To chat in the group type: 'CHAT G' ...");
+                        groupChats.Add(name, group);
+                        OnGroupChange?.Invoke(this, new GroupChangedEventArgs(groupChats.Values.ToList()));
+                        return;
+                    }
+                }
+                OnSystemError?.Invoke(this, new SystemErrorEventArgs($"GroupChat {name} already exists."));
             }
             catch (Exception e)
             {
-                Console.WriteLine($"[SYSTEM] Error! Couldn't add Group due to: {e.Message}");
+                OnSystemError?.Invoke(this, new SystemErrorEventArgs($"Couldn't create GroupChat {name}."));
             }
-            return name;
         }
 
-        private static string InputGroupName()
-        {
-            Console.WriteLine("[SYSTEM] Enter Group Chat Name:");
-            string name;
-
-            if (groupChats.Contains(name))
-                throw new Exception($"Group Chat {name} already exists ...");
-
-            return name;
-        }
-
-        private static IPAddress GenerateIP(string groupName)
+        private IPAddress GenerateIP(string groupName)
         {
             using MD5 md5_hasher = MD5.Create();
 
@@ -64,104 +60,91 @@ namespace Client.UDP
             return ip;
         }
 
-        public static void SendToGroupChat(DataPacket packet, UdpClient client)
+        public void SendToGroup(UdpClient client, string username, string name, string message)
         {
-            if (!groupChats.Contains(packet.Reciever))
+            if (!groupChats.ContainsKey(name))
             {
-                Console.WriteLine($"[SYSTEM] Error! Group: {packet.Reciever} not found.");
+                OnSystemError?.Invoke(this, new SystemErrorEventArgs($"Group: {name} not found."));
                 return;
             }
 
             try
             {   // try catch block in case user is not a member of the group
-                client.JoinMulticastGroup(GenerateIP(packet.Reciever));
-                Console.WriteLine($"[SYSTEM] You have joined the group {packet.Reciever} successfuly.");
+                client.JoinMulticastGroup(GenerateIP(name));
+                groupChats[name].MembersCount++;
+                OnGroupChange?.Invoke(this, new GroupChangedEventArgs(groupChats.Values.ToList()));
             }
             catch { }
 
             try
             {
                 byte[] _buffer = new byte[_buffer_size];
-                _buffer = Encoding.UTF8.GetBytes($"[{packet.Reciever}] -> ({packet.Author}): {packet.Message}");
+                _buffer = Encoding.UTF8.GetBytes($"{username}: {message}");
 
-                IPEndPoint endPoint = new IPEndPoint(GenerateIP(packet.Reciever), _portNum);
+                IPEndPoint endPoint = new IPEndPoint(GenerateIP(name), _portNum);
                 client.Send(_buffer, _buffer.Length, endPoint);
             }
             catch
             {
-                Console.WriteLine($"[SYSTEM] Error! Couldn't Send Data Packet to: {packet.Reciever}.");
+                OnSystemError?.Invoke(this, new SystemErrorEventArgs($"Couldn't Send message to: {name}."));
             }
         }
 
-        public static void JoinGroup(UdpClient client)
+        public void JoinGroup(UdpClient client, string name)
         {
-            DisplayGroups();
-            if (groupChats.Count > 0)
+            if (!groupChats.ContainsKey(name))
             {
-                Console.WriteLine("[SYSTEM] Write the name of the group you'd like to join:");
-                string name;
+                OnSystemError?.Invoke(this, new SystemErrorEventArgs($"No Group chat {name} found..."));
+                return;
+            }
 
-                if (!groupChats.Contains(name))
-                {
-                    Console.WriteLine($"[SYSTEM] Error! No Group chat {name} found...");
-                    return;
-                }
-
-                try
-                {
-                    client.JoinMulticastGroup(GenerateIP(name));
-                    Console.WriteLine($"[SYSTEM] You have joined the group {name} successfuly.");
-                    Console.WriteLine("[SYSTEM] To chat in the group type: 'CHAT G' ...");
-                }
-                catch
-                {
-                    Console.WriteLine($"[SYSTEM] Error! You are already a member of group {name}.");
-                }
+            try
+            {
+                client.JoinMulticastGroup(GenerateIP(name));
+                groupChats[name].MembersCount++;
+                OnGroupChange?.Invoke(this, new GroupChangedEventArgs(groupChats.Values.ToList()));
+            }
+            catch
+            {
+                OnSystemError?.Invoke(this, new SystemErrorEventArgs($"You are already a member of Group: {name}."));
             }
         }
 
-        public static void LeaveGroup(UdpClient client)
+        public void LeaveGroup(UdpClient client, string name)
         {
-            Console.WriteLine("[SYSTEM] Write the name of the group you'd like to leave:");
-            string name = Console.ReadLine().Trim();
-
-            if (!groupChats.Contains(name))
+            if (!groupChats.ContainsKey(name))
             {
-                Console.WriteLine($"[SYSTEM] Error! No Group chat {name} found...");
+                OnSystemError?.Invoke(this, new SystemErrorEventArgs($"No GroupChat {name} found."));
                 return;
             }
 
             try
             {
                 client.DropMulticastGroup(GenerateIP(name));
-                Console.WriteLine($"[SYSTEM] You have left the group {name} successfuly.");
+                groupChats[name].MembersCount--;
+
+                if (groupChats[name].MembersCount == 0)
+                {
+                    lock (_lock)
+                    {
+                        groupChats.Remove(name);
+                    }                    
+                }
+                OnGroupChange?.Invoke(this, new GroupChangedEventArgs(groupChats.Values.ToList()));
             }
             catch
             {
-                Console.WriteLine($"[SYSTEM] Error! You are not a member of group {name}.");
-
+                OnSystemError?.Invoke(this, new SystemErrorEventArgs($"You are not a member of Group: {name}."));
             }
         }        
 
-        private static void DisplayGroups()
-        {
-            Console.WriteLine("[SYSTEM] Available Groups:");
-
-            if (groupChats.Count == 0)
-                Console.WriteLine("\t-None.\n");
-
-            foreach (string groupname in groupChats)
-            {
-                Console.WriteLine($"\t- {groupname}");
-            }
-            Console.WriteLine();
-        }
+        // <=== Broadcasting services ===>
 
         /// <summary>
         /// Return a serialized json string of the group chats 
         /// </summary>
         /// <returns></returns>
-        public static string? GetGroups()
+        public string? GetGroups()
         {
             if (groupChats.Count > 0)
             {
@@ -176,15 +159,15 @@ namespace Client.UDP
         /// 
         /// </summary>
         /// <param name="str"></param>
-        public static void AddGroups(string str)
+        public void AddGroups(string str)
         {
-            List<string>? existing_groups = JsonSerializer.Deserialize<List<string>>(str);
+            Dictionary<string, GroupChat>? existing_groups = JsonSerializer.Deserialize<Dictionary<string, GroupChat>>(str);
 
-            foreach (string groupName in existing_groups)
+            foreach (string groupName in existing_groups.Keys)
             {
-                if (!groupChats.Contains(groupName))
+                if (!groupChats.ContainsKey(groupName))
                 {
-                    groupChats.Add(groupName);
+                    groupChats.Add(groupName, existing_groups[groupName]);
                 }
             }
         }

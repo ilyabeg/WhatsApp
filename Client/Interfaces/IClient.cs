@@ -3,6 +3,6 @@
     internal interface IClient
     {
         public void SendUnicastMessage(string remoteClientName, string message);
-        public void Connect();
+        public void Connect(string username);
     }
 }

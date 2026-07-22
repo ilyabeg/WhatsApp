@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Client.Events
 {
-    public enum State { Cennecting, Disconnecting }
+    public enum State { Connecting, Disconnecting }
 
-    internal class UserChangedEventArgs : EventArgs
+    public class UserChangedEventArgs : EventArgs
     {
         public string UserName {  get; }
         public State State { get; }

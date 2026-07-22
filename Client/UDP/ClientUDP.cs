@@ -1,28 +1,38 @@
-﻿using Client.Client_Related;
-using Client.Clients;
+﻿using Client.Clients;
+using Client.Events;
 using Client.Interfaces;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.Json;
 
 namespace Client.UDP
 {
     internal class ClientUDP : IClient
     {
+        // define public events for ViewModel to subscribe to
+        public event EventHandler<MessageRecievedEventArgs> OnMessageReceived;
+        public event EventHandler<UserChangedEventArgs> OnUserChanged;
+        public event EventHandler<GroupChangedEventArgs> OnGroupsChanged;
+        public event EventHandler<SystemErrorEventArgs> OnSystemError;
+
         // client for unicast
         private UdpClient _client;
         private string _username;
+
+        // other active users
+        private Dictionary<string, IPEndPoint> _users;
+
+        // local group chats manager
+        private GroupChats _groupsManager;
+
+        // broadcast helper
+        BroadcastHandlerUDP _broadcastHandler;
 
         // listener to listen for broadcasts
         private UdpClient _listener;
         private readonly int _listening_port = 20000;
         public readonly IPEndPoint _listeningEndPoint;
-
-        private Dictionary<string, IPEndPoint> _users;
-        private Dictionary<string, Action> _input_option;
-
 
         // declare console event and static reference to prevent garbage collection
         private delegate bool ConsoleEventDelegate(int eventType);
@@ -32,30 +42,25 @@ namespace Client.UDP
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool SetConsoleCtrlHandler(ConsoleEventDelegate callback, bool add);
 
-
-        public ClientUDP(string username)
+        public ClientUDP()
         {
-            _username = username;
-
             _users = new Dictionary<string, IPEndPoint>();
+            _groupsManager = new GroupChats();
+            _broadcastHandler = new BroadcastHandlerUDP();
+
+            // event bubbling
+            _groupsManager.OnSystemError += (s, e) => OnSystemError?.Invoke(this, e);
+            _groupsManager.OnGroupChange += (s, e) => OnGroupsChanged?.Invoke(this, e);
 
             _listeningEndPoint = new IPEndPoint(IPAddress.Any, _listening_port);
             InitListener();
+
             Task.Run(ListenForBroadcast); // run broadcast listener task in the background
-
             Task.Run(Listen); // run user listener task in the background
-
-            InitOptions();
 
             // make new event delegate that runs the event callback 
             _handler = new ConsoleEventDelegate(ConsoleEventCallback);
             SetConsoleCtrlHandler(_handler, true);
-        }
-
-        public void Connect()
-        {
-            _client = new UdpClient(new IPEndPoint(IPAddress.Any, 0)); // bind to any port and ip
-
         }
 
         /// <summary>
@@ -88,24 +93,45 @@ namespace Client.UDP
             MulticastGroup.AddToMulticastGroup(_listener);
         }
 
-        public void InitOptions()
+        public void Connect(string username)
         {
-                ["NEW G"] = () =>
-                {
-                    var newGroupName = GroupChats.CreateNewGroup(_listener); // <- make listener create the group because he listens to port 20000
-
-                    // broadcast the new group so all clients add it to their local memmory
-                    if (newGroupName != null)
-                    {
-                        string newGroupBroadcast = $"$ADD_GROUPS_SIGNAL$#{GroupChats.GetGroups()}";
-                        MulticastGroup.SendToMulticastGroup(newGroupBroadcast, _listener);
-                    }
-                },
-                ["JOIN G"] = () => GroupChats.JoinGroup(_client),
-                ["LEAVE G"] = () => GroupChats.LeaveGroup(_client),
-            };
+            _username = username;
+            _client = new UdpClient(new IPEndPoint(IPAddress.Any, 0)); // bind to any port and ip
+            OnUserChanged?.Invoke(this, new UserChangedEventArgs(username, State.Connecting));
         }
 
+        public void SendUnicastMessage(string remoteClientName, string message)
+        {
+            byte[] buffer = Encoding.UTF8.GetBytes(message);
+            _client.Send(buffer, buffer.Length, _users[remoteClientName]);
+        }        
+
+
+        // <=== Group chats methods ===>
+
+        public void CreateGroup(string name)
+        {
+            _groupsManager.CreateNewGroup(_client, name);
+        }
+
+        public void SendGroupMessage(string name, string message)
+        {
+            _groupsManager.SendToGroup(_client, _username, name, message);
+        }
+
+        public void JoinGroup(string name)
+        {
+            _groupsManager.JoinGroup(_client, name);
+        }
+
+        public void LeaveGroup(string name)
+        {
+            _groupsManager.LeaveGroup(_client, name);
+        }
+
+        /// <summary>
+        /// Listens for incoming unicast messages
+        /// </summary>
         private void Listen()
         {
             try
@@ -119,25 +145,35 @@ namespace Client.UDP
             }
             catch (Exception e)
             {
-                Console.WriteLine($"[SYSTEM] Error! Connection to Network lost due to: {e.Message}");
+                OnSystemError?.Invoke(this, new SystemErrorEventArgs("Couldn't recieve Unicast message."));
             }
         }
 
         private void Read(byte[] recievedBytes, IPEndPoint remoteEP)
         {
             try
-            {   // block user from taking already existing name 
-                string recieved = Encoding.UTF8.GetString(recievedBytes);
-                if (recieved.Equals("$USERNAME_IS_TAKEN$"))
-                    UsernameAuthorizer.FreeUsername = false;
-                else
-                    DataPacket.ProcessDataPacket(recievedBytes);
+            {
+                string message = Encoding.UTF8.GetString(recievedBytes);
+                OnMessageReceived?.Invoke(this, new MessageRecievedEventArgs(RemoteClientAt(remoteEP), message));
             }
             catch
             {
-                Console.WriteLine("[SYSTEM] Error! Couldn't process Data Packet.");
-                Printer.PrintBytes(recievedBytes);
+                OnSystemError?.Invoke(this, new SystemErrorEventArgs("Couldn't process recieved Message."));
             }
+        }
+
+        /// <summary>
+        /// Returns the UserName of the remote client that is at the provided remote endpoint
+        /// </summary>
+        /// <param name="remoteEP"></param>
+        /// <returns></returns>
+        private string? RemoteClientAt(IPEndPoint remoteEP)
+        {
+            foreach (string username in _users.Keys)
+            {
+                if (_users[username].Equals(remoteEP)) return username;
+            }
+            return null;
         }
 
         /// <summary>
@@ -154,9 +190,9 @@ namespace Client.UDP
                     ReadBroadcast(recievedBytes, remoteEndPoint);
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Console.WriteLine($"[SYSTEM] Error! Connection to Network lost due to: {e.Message}");
+                OnSystemError?.Invoke(this, new SystemErrorEventArgs("Connection to network lost."));
             }
         }
 
@@ -166,25 +202,40 @@ namespace Client.UDP
             {
                 if (CheckUsernameBroadcast(receivedBytes, remoteEndPoint)) return;
 
-                int executed_option = BroadcastHandlerUDP.HandleBroadcast(receivedBytes, remoteEndPoint, _users);
+                int executed_option = _broadcastHandler.HandleBroadcast(receivedBytes, remoteEndPoint, _users, _groupsManager);
                 // if broadcast handler couldn't handle the broadcast, try to process it as a Data Packet
                 if (executed_option == 0)
-                    DataPacket.ProcessDataPacket(receivedBytes);
+                {
+                    DataPacket packet = DataPacket.TransferData(receivedBytes);
+                    if (packet != null)
+                    {
+                        OnMessageReceived?.Invoke(this, new MessageRecievedEventArgs(packet.Author, packet.Message));
+                    }
+                }
 
-                // if new user added, send him my name so he knows I exist and all existing group chats.
+                // if new user added
                 else if (executed_option == 1)
                 {
+                    // notify UI the users list
+                    OnUserChanged?.Invoke(this, new UserChangedEventArgs(RemoteClientAt(remoteEndPoint), State.Connecting));
+
+                    // send to new user my name so he knows I exist and all existing group chats.
                     MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}", _client);
 
-                    string existing_groups = GroupChats.GetGroups();
+                    string existing_groups = _groupsManager.GetGroups();
                     if (existing_groups != null)
                         MulticastGroup.SendToMulticastGroup($"$ADD_GROUPS_SIGNAL$#{existing_groups}", _client);
                 }
+
+                // if user disconnected
+                else if (executed_option == 2)
+                {
+                    OnUserChanged?.Invoke(this, new UserChangedEventArgs(RemoteClientAt(remoteEndPoint), State.Disconnecting));
+                }
             }
-            catch
+            catch 
             {
-                //Console.WriteLine("[SYSTEM] Error! Couldn't process broadcast.");
-                Printer.PrintBytes(receivedBytes);
+                OnSystemError?.Invoke(this, new SystemErrorEventArgs("Couldn't recieve Unicast message."));
             }
         }
 
@@ -211,38 +262,6 @@ namespace Client.UDP
                 return true;
             }
             return false;
-        }
-
-        private DataPacket? Write()
-        {
-            try
-            {
-                DataPacket packet = DataPacket.CreateNew();
-                packet.Author = _username;
-                return packet;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"[SYSTEM] Error! Couldn't write message due to {e.Message}");
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Sends datapacket as bytes to remote user (unicast)
-        /// </summary> 
-        /// <param name="packet"></param>
-        private void SendDataPacket(DataPacket packet)
-        {
-            string datapacket = JsonSerializer.Serialize(packet);
-
-            if (packet.Reciever.Equals("all", StringComparison.OrdinalIgnoreCase))
-                MulticastGroup.SendToMulticastGroup(datapacket, _client);
-            else
-            {
-                byte[] buffer = Encoding.UTF8.GetBytes(datapacket);
-                _client.Send(buffer, buffer.Length, _users[packet.Reciever]);
-            }
         }
     }
 }

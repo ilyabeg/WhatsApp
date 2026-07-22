@@ -2,7 +2,7 @@
 
 namespace Client.Events
 {
-    internal class GroupChangedEventArgs : EventArgs
+    public class GroupChangedEventArgs : EventArgs
     {
         public List<GroupChat> GroupChats { get; }
 
