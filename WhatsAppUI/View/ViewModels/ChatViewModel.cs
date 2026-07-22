@@ -11,7 +11,7 @@ namespace WhatsAppUI.View.ViewModels
     {
         // selected user
         private IChatItem _remoteClient;
-        public ObservableCollection<string> Messages { get; set; }
+        public ObservableCollection<MessageBubble> Messages { get; set; }
 
         // user input
         private string _message;
@@ -39,7 +39,7 @@ namespace WhatsAppUI.View.ViewModels
         {
             //Send(this.Message, _remoteClient)
 
-            Messages.Add($"Me: {this.Message}");
+            Messages.Add(new MessageBubble(this.Message, true)); // <- add the message that was sent by me
             this.Message = "";
         }
         private bool CanExecuteSend(object parameter) => !string.IsNullOrWhiteSpace(this.Message); // && _remoteClient != null;

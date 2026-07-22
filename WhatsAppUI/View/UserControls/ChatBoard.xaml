@@ -4,9 +4,62 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:WhatsAppUI.View.UserControls"
+             
+             xmlns:helpers="clr-namespace:WhatsAppUI.View.Helpers"
+             
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
 
-    <Grid Background="{StaticResource ChatBackgroundBrush}" />
+    <Grid Background="{StaticResource ChatBackgroundBrush}">
+
+        <ListBox Background="Transparent"
+                 ItemsSource="{Binding Messages}"
+                 BorderThickness="0"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 HorizontalContentAlignment="Stretch">
+
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Border Padding="10" Margin="5" CornerRadius="18">
+                        
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                
+                                <!-- Deafult: message was sent by remote client -->
+                                <Setter Property="Background" Value="{StaticResource RemoteMessageBubbleBrush}" />
+                                <Setter Property="HorizontalAlignment" Value="Left" />
+
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsMe}" Value="true" >
+
+                                        <!-- If message sent by me display it on the right -->
+                                        <Setter Property="Background" Value="{StaticResource MyMessageBubbleBrush}" />
+                                        <Setter Property="HorizontalAlignment" Value="Right" />
+
+                                    </DataTrigger>
+                                </Style.Triggers>
+                                
+                            </Style>
+                        </Border.Style>
+                        
+                        <!-- Actual message -->
+                        <TextBlock Text="{Binding Text}"
+                                   TextWrapping="Wrap"
+                                   FontSize="15"
+                                   Foreground="{StaticResource PrimaryTextBrush}"/>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+
+            <!-- Gets rid of the blue selection focus for each item in the list box -->
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="Focusable" Value="False"/>
+                </Style>
+            </ListBox.ItemContainerStyle>
+
+        </ListBox>
+        
+    </Grid>
 
 </UserControl>
