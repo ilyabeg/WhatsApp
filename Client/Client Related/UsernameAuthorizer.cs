@@ -6,12 +6,11 @@ namespace Client.Client_Related
     internal class UsernameAuthorizer
     {
         public static volatile bool FreeUsername;
-        public static string GetUsername(UdpClient udpClient)
+        public static string GetUsername(string username)
         {
             Console.WriteLine("[SYSTEM] Before starting to chat, enter your user name:");
             while (true)
             {
-                string username = Console.ReadLine().Trim();
                 FreeUsername = true; // innocent until proven guilty
 
                 if (string.IsNullOrWhiteSpace(username))

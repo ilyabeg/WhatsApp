@@ -7,7 +7,6 @@ namespace Client.Application
     internal class Bootloader
     {
         private static IClient _client;
-
         public static void Boot(char desition) 
         {
             if (desition == 'T' || desition == 't')
