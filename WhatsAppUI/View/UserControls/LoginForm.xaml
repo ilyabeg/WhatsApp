@@ -16,13 +16,15 @@
         </Grid.RowDefinitions>
 
         <Viewbox Grid.Row="0" Stretch="Uniform" Margin="10">
-            <TextBlock Name="LoginTxt" Style="{StaticResource LoginTextBlockStyle}" />
+            <TextBlock Style="{StaticResource LoginTextBlockStyle}"
+                       Text="{Binding LoginText}"/>
         </Viewbox>
         
-        <TextBox Grid.Row="1" Name="UsernameInfo" Style="{StaticResource UsernameInput}" />
+        <TextBox Grid.Row="1" Style="{StaticResource UsernameInput}" 
+                 Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"/>
         
-        <Button Grid.Row="2" Name="btnRegister" Style="{StaticResource RegisterButtonStye}"
-                Click="btnRegister_Click"/>
+        <Button Grid.Row="2" Style="{StaticResource RegisterButtonStye}"
+                Command="{Binding RegisterCommand}"/>
 
     </Grid>
     
