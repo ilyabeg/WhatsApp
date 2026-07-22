@@ -8,7 +8,7 @@ namespace Client.Application
     {
         private static IClient _client;
 
-        public static void Boot()
+        public static void Boot() 
         {
             char desition = GetDesition();
             if (desition == 'T' || desition == 't')
