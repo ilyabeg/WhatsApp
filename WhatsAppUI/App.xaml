@@ -10,7 +10,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
 
-                <!-- Custom resource Dictionaries -->
+           <!-- Custom resource Dictionaries -->
                 
                 <!-- Colors and Brushes -->
                 <ResourceDictionary Source="/View/Styles/Colors.xaml" />

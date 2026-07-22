@@ -1,14 +1,14 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Windows;
 using System.Windows.Input;
 using WhatsAppUI.View.Helpers;
-using WhatsAppUI.View.Windows;
 
 namespace WhatsAppUI.View.ViewModels
 {
     internal class LoginViewModel : INotifyPropertyChanged
     {
+        public event Action OnLoginSuccess; // <- event for switching from main window into the chat window
+
         private string _username = "";
         public string Username
         {
@@ -44,7 +44,7 @@ namespace WhatsAppUI.View.ViewModels
         {
             bool isTaken = false;//MyModel.Login(this.Username);
 
-            if (!isTaken) // <- Username Authorization from Model...
+            if (isTaken) // <- Username Authorization from Model...
             {
                 LoginText = "Username already taken. Please re-enter:";
                 Username = "";
@@ -54,13 +54,8 @@ namespace WhatsAppUI.View.ViewModels
                 //// display UDP/TCP choice
                 //MessageBox.Show("Would you like to use UDP Communication? (No = TCP Communication)", "Protocol Choice", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.TryAgain);
 
-                //// open chatting window
-                //ChattingWindow chattingWindow = new();
-                //chattingWindow.Show();
-
-                ////close main window
-                //Window parentWindow = Window.GetWindow(this);
-                //parentWindow?.Close();
+                // open chatting window and close main window
+                OnLoginSuccess.Invoke();                
             }
         }
         private bool CanRegister(object parameter) => !string.IsNullOrEmpty(this.Username);

@@ -1,5 +1,4 @@
 ﻿using System.Windows.Controls;
-using WhatsAppUI.View.ViewModels;
 
 namespace WhatsAppUI.View.UserControls
 {
@@ -8,7 +7,6 @@ namespace WhatsAppUI.View.UserControls
         public LoginForm()
         {
             InitializeComponent();
-            DataContext = new LoginViewModel();
         }        
     }
 }
