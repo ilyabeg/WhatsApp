@@ -26,12 +26,15 @@ namespace WhatsAppUI.View.ViewModels
         }
 
         public ICommand SendCommand { get; } // <- send button click command
+        public ICommand ClearCommand { get; } // <- clear msgBox command
         public ChatViewModel()
         {
             Messages = new();
             SendCommand = new RelayCommand(ExecuteSend, CanExecuteSend);
+            ClearCommand = new RelayCommand(ExecuteClear, CanExecuteClear);
         }
 
+        // send command
         private void ExecuteSend(object parameter)
         {
             //Send(this.Message, _remoteClient)
@@ -39,7 +42,13 @@ namespace WhatsAppUI.View.ViewModels
             Messages.Add($"Me: {this.Message}");
             this.Message = "";
         }
-        private bool CanExecuteSend(object parameter) => !string.IsNullOrWhiteSpace(this.Message) && _remoteClient != null;
+        private bool CanExecuteSend(object parameter) => !string.IsNullOrWhiteSpace(this.Message); // && _remoteClient != null;
+
+
+        // clear command
+        private void ExecuteClear(object parameter) => this.Message = "";
+        private bool CanExecuteClear(object parameter) => !string.IsNullOrWhiteSpace(this.Message);
+
 
         public void Clear(IChatItem remoteClient)
         {

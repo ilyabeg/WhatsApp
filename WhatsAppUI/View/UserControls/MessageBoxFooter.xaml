@@ -20,11 +20,14 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0" Style="{StaticResource PlaceHolderStyle}" />
-                
-                <TextBox Grid.Column="0" Style="{StaticResource MessageInput}" TextChanged="InputTxt_TextChanged" />
+                <TextBlock Name="PlaceHolderTxt" Grid.Column="0" Style="{StaticResource PlaceHolderStyle}" />
 
-                <Button Grid.Column="1" Style="{StaticResource ClearButtonStyle}" Click="btnClear_Click" />
+                <TextBox Name="InputTxt" Grid.Column="0" Style="{StaticResource MessageInput}"
+                         TextChanged="InputTxt_TextChanged"
+                         Text="{Binding Message, UpdateSourceTrigger=PropertyChanged}" />
+
+                <Button Grid.Column="1" Style="{StaticResource ClearButtonStyle}"
+                        Command="{Binding ClearCommand}"/>
             </Grid>
         </Border>
 
