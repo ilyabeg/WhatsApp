@@ -1,5 +1,4 @@
 ﻿using Client.UDP;
-using System.Net;
 using System.Text;
 
 namespace Client.Clients
@@ -30,20 +29,6 @@ namespace Client.Clients
             Console.WriteLine("To Leave a Group type: 'LEAVE G' ...");
             Console.WriteLine("To Display Options type: 'OPTIONS' ...");
             Console.WriteLine("NOTE: Type 'CLEAR' to clear the screen at any time\n");
-        }
-
-        public static void PrintDictKeys(string intro_message, Dictionary<string, IPEndPoint> dict)
-        {
-            Console.WriteLine(intro_message);
-            if (dict.Count > 0)
-            {
-                foreach (string str in dict.Keys)
-                {
-                    Console.WriteLine($"\t- {str}");
-                }
-            }
-            else
-                Console.WriteLine("\t- None.");
         }
     }
 }
