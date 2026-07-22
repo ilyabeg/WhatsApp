@@ -51,9 +51,6 @@ namespace WhatsAppUI.View.ViewModels
             }
             else
             {
-                //// display UDP/TCP choice
-                //MessageBox.Show("Would you like to use UDP Communication? (No = TCP Communication)", "Protocol Choice", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.TryAgain);
-
                 // open chatting window and close main window
                 OnLoginSuccess.Invoke();                
             }
