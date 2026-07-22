@@ -4,11 +4,24 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:WhatsAppUI.View.UserControls"
+             
+             xmlns:models="clr-namespace:Client.Interfaces;assembly=Client"
+             
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="180">
 
     <Grid Background="{StaticResource UsersListBrush}" >
-        <ListBox Name="ChatsListBox" Background="Transparent" ItemsSource="{Binding ChatItems}" />
+
+        <ListBox Background="Transparent" ItemsSource="{Binding ChatItems}" SelectedItem="{Binding SelectedChat, Mode=TwoWay}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    
+                    <TextBlock Text="{Binding ChatItemName}" />
+                    
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        
     </Grid>
 
 </UserControl>

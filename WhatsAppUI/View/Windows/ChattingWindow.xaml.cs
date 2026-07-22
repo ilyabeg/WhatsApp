@@ -8,7 +8,7 @@ namespace WhatsAppUI.View.Windows
         public ChattingWindow()
         {
             InitializeComponent();
-            this.DataContext = new ChatViewModel(); // <- connect to view model
+            DataContext = new MainViewModel(); // <- connect to view model
         }
     }
 }

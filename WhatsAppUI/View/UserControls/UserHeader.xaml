@@ -8,7 +8,7 @@
              Height="40" d:DesignWidth="800">
     
     <Grid Background="{StaticResource UsernameHeaderBrush}">
-        <TextBlock x:Name="UsernameTxtBlock" Style="{StaticResource UsernameBlockStyle}" />
+        <TextBlock Style="{StaticResource UsernameBlockStyle}" Text="{Binding SelectedChat.ChatItemName}" />
     </Grid>
     
 </UserControl>

@@ -1,7 +1,6 @@
-﻿
-namespace Client.Interfaces
+﻿namespace Client.Interfaces
 {
-    internal interface IClient
+    internal interface IClient : IChatItem
     {
         public void Start();
     }

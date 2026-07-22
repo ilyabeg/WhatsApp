@@ -34,7 +34,7 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <UserControls:ChatBoard Grid.Row="0" Grid.Column="0" />
+            <UserControls:ChatBoard Grid.Row="0" Grid.Column="0" DataContext="{Binding ChatViewModel}" />
             <UserControls:MessageBoxFooter Grid.Row="1" Grid.Column="0" />
 
         </Grid>

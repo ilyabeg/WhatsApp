@@ -20,15 +20,16 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0" Name="PlaceHolderTxt" Style="{StaticResource PlaceHolderStyle}" />
+                <TextBlock Grid.Column="0" Style="{StaticResource PlaceHolderStyle}" />
                 
-                <TextBox Grid.Column="0" Name="InputTxt" Style="{StaticResource MessageInput}" TextChanged="InputTxt_TextChanged" />
+                <TextBox Grid.Column="0" Style="{StaticResource MessageInput}" TextChanged="InputTxt_TextChanged" />
 
-                <Button Grid.Column="1" Name="btnClear" Style="{StaticResource ClearButtonStyle}" Click="btnClear_Click" />
+                <Button Grid.Column="1" Style="{StaticResource ClearButtonStyle}" Click="btnClear_Click" />
             </Grid>
         </Border>
 
-        <Button Grid.Column="1" Name="btnSend" Style="{StaticResource SendButtonStyle}" Click="btnSend_Click" />
+        <Button Grid.Column="1" Style="{StaticResource SendButtonStyle}"
+                Command="{Binding SendCommand}"/>
     </Grid>
     
 </UserControl>
