@@ -1,4 +1,6 @@
-﻿using System.ComponentModel;
+﻿using Client.Application;
+using Client.Interfaces;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using WhatsAppUI.View.Helpers;
@@ -7,7 +9,8 @@ namespace WhatsAppUI.View.ViewModels
 {
     internal class LoginViewModel : INotifyPropertyChanged
     {
-        public event Action OnLoginSuccess; // <- event for switching from main window into the chat window
+        public event Action<IClient> OnLoginSuccess; // <- event for switching from main window into the chat window
+        public event Func<bool> OnProtocolChoice; // <- event to choose protocol
 
         private string _username = "";
         public string Username
@@ -42,9 +45,14 @@ namespace WhatsAppUI.View.ViewModels
 
         private void Register(object parameter)
         {
-            bool isTaken = false;//MyModel.Login(this.Username);
+            // boot protocol chosen client            
+            bool choice = OnProtocolChoice.Invoke(); // <- choose protocol by MessageBox
+            IClient newClient = Bootloader.BootClient(choice);
 
-            if (isTaken) // <- Username Authorization from Model...
+            // Username authorization using Model logic
+            bool isFree = newClient.Connect(this.Username);
+
+            if (!isFree) // <- Username Authorization from Model...
             {
                 LoginText = "Username already taken. Please re-enter:";
                 Username = "";
@@ -52,7 +60,7 @@ namespace WhatsAppUI.View.ViewModels
             else
             {
                 // open chatting window and close main window
-                OnLoginSuccess.Invoke();                
+                OnLoginSuccess.Invoke(newClient);                
             }
         }
         private bool CanRegister(object parameter) => !string.IsNullOrEmpty(this.Username);

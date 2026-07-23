@@ -1,8 +1,18 @@
-﻿namespace Client.Interfaces
+﻿using Client.Events;
+
+namespace Client.Interfaces
 {
-    internal interface IClient
+    public interface IClient : IChatItem
     {
         public void SendUnicastMessage(string remoteClientName, string message);
-        public void Connect(string username);
+        public bool Connect(string username);
+
+        public List<string> GetActiveUsers();
+
+        // define public events for ViewModel to subscribe to
+        public event EventHandler<MessageRecievedEventArgs> OnMessageReceived;
+        public event EventHandler<UserChangedEventArgs> OnUserChanged;
+        public event EventHandler<GroupChangedEventArgs> OnGroupsChanged;
+        public event EventHandler<SystemErrorEventArgs> OnSystemError;
     }
 }

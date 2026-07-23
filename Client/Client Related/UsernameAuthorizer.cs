@@ -6,28 +6,30 @@ namespace Client.Client_Related
     internal class UsernameAuthorizer
     {
         public static volatile bool FreeUsername;
-        public static string GetUsername(string username)
+
+        /// <summary>
+        /// Retuens true if the provided username is free and false if it is taken.
+        /// </summary>
+        public static bool IsFreeUsername(string username, UdpClient broadcaster)
         {
-            Console.WriteLine("[SYSTEM] Before starting to chat, enter your user name:");
             while (true)
             {
                 FreeUsername = true; // innocent until proven guilty
 
                 if (string.IsNullOrWhiteSpace(username))
                 {
-                    Console.WriteLine("[SYSTEM] Please enter valid username:");
-                    continue;
+                    return false;
                 }
+
                 // broadcast username to check if it is taken
-                MulticastGroup.SendToMulticastGroup($"$CHECK_USERNAME_SIGNAL$#{username}", udpClient);
+                MulticastGroup.SendToMulticastGroup($"$CHECK_USERNAME_SIGNAL$#{username}", broadcaster);
                 Thread.Sleep(250);
 
                 if (!FreeUsername)
                 {
-                    Console.WriteLine("[SYSTEM] Username already taken. Please re-enter:");
-                    continue;
+                    return false; // username taken = NOT free
                 }
-                return username;
+                return true;
             }
         }
     }

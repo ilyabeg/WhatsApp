@@ -24,8 +24,9 @@
     <Style x:Key="ActiveUsersBlockStyle" TargetType="TextBlock" >
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Margin" Value="10" />
-        <Setter Property="Text" Value="Active Users &amp; Groups" />
+        <Setter Property="Text" Value="Active Connections" />
         <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="FontStyle" Value="Italic" />

@@ -56,7 +56,7 @@ namespace Client.TCP
                 while ((totalRead = stream.Read(buffer, 0, buffer.Length)) != 0)
                 {
                     string recievedMessage = Encoding.UTF8.GetString(buffer, 0, totalRead);
-                    Printer.PrintMessage(recievedMessage);
+                    //Printer.PrintMessage(recievedMessage);
                 }
 
                 client.Dispose(); // dispose client when done

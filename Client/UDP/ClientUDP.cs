@@ -1,4 +1,5 @@
-﻿using Client.Clients;
+﻿using Client.Client_Related;
+using Client.Clients;
 using Client.Events;
 using Client.Interfaces;
 using System.Net;
@@ -19,6 +20,7 @@ namespace Client.UDP
         // client for unicast
         private UdpClient _client;
         private string _username;
+        public string ChatItemName { get; set; } // <- ChatItem name for UI
 
         // other active users
         private Dictionary<string, IPEndPoint> _users;
@@ -36,7 +38,7 @@ namespace Client.UDP
 
         // declare console event and static reference to prevent garbage collection
         private delegate bool ConsoleEventDelegate(int eventType);
-        private static ConsoleEventDelegate? _handler;
+        private static ConsoleEventDelegate? _handler; 
 
         // import winAPI dll to use the SetConsoleCtrlHandler method
         [DllImport("kernel32.dll", SetLastError = true)]
@@ -48,7 +50,7 @@ namespace Client.UDP
             _groupsManager = new GroupChats();
             _broadcastHandler = new BroadcastHandlerUDP();
 
-            // event bubbling
+            // event bubbling from group chats
             _groupsManager.OnSystemError += (s, e) => OnSystemError?.Invoke(this, e);
             _groupsManager.OnGroupChange += (s, e) => OnGroupsChanged?.Invoke(this, e);
 
@@ -93,19 +95,47 @@ namespace Client.UDP
             MulticastGroup.AddToMulticastGroup(_listener);
         }
 
-        public void Connect(string username)
+        /// <summary>
+        /// Returns true upon Connect succession, false if couldn't connect
+        /// </summary>
+        /// <param name="username"></param>
+        public bool Connect(string username)
         {
-            _username = username;
-            _client = new UdpClient(new IPEndPoint(IPAddress.Any, 0)); // bind to any port and ip
-            OnUserChanged?.Invoke(this, new UserChangedEventArgs(username, State.Connecting));
+            bool isFree = UsernameAuthorizer.IsFreeUsername(username, _listener);
+            if (isFree)
+            {
+                _username = username;
+                this.ChatItemName = username;
+
+                _client = new UdpClient(new IPEndPoint(IPAddress.Any, 0)); // bind to any port and ip
+
+                // broadcast my existence
+                MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}", _client);
+
+                OnUserChanged?.Invoke(this, new UserChangedEventArgs(username, State.Connecting));
+                return true; 
+            }
+            // taken...
+            return false;
         }
 
         public void SendUnicastMessage(string remoteClientName, string message)
         {
-            byte[] buffer = Encoding.UTF8.GetBytes(message);
-            _client.Send(buffer, buffer.Length, _users[remoteClientName]);
-        }        
+            if (_users.TryGetValue(remoteClientName, out IPEndPoint remoteEndPoint))
+            {
+                byte[] buffer = Encoding.UTF8.GetBytes(message);
+                _client.Send(buffer, buffer.Length, remoteEndPoint);
+            }
+            else
+            {
+                OnSystemError?.Invoke(this, new SystemErrorEventArgs("Couldn't send Unicast message."));
+            }
+        }
 
+        public List<string> GetActiveUsers()
+        {
+            return _users.Keys.ToList();
+        }
 
         // <=== Group chats methods ===>
 
@@ -154,7 +184,11 @@ namespace Client.UDP
             try
             {
                 string message = Encoding.UTF8.GetString(recievedBytes);
-                OnMessageReceived?.Invoke(this, new MessageRecievedEventArgs(RemoteClientAt(remoteEP), message));
+
+                if (message.Equals("$USERNAME_IS_TAKEN$")) 
+                    UsernameAuthorizer.FreeUsername = false; // change free flag
+                else
+                    OnMessageReceived?.Invoke(this, new MessageRecievedEventArgs(RemoteClientAt(remoteEP), message));
             }
             catch
             {
@@ -230,7 +264,10 @@ namespace Client.UDP
                 // if user disconnected
                 else if (executed_option == 2)
                 {
-                    OnUserChanged?.Invoke(this, new UserChangedEventArgs(RemoteClientAt(remoteEndPoint), State.Disconnecting));
+                    string str = Encoding.UTF8.GetString(receivedBytes);
+                    string[] splitted = str.Split('#');
+                    string username = splitted[1];
+                    OnUserChanged?.Invoke(this, new UserChangedEventArgs(username, State.Disconnecting));
                 }
             }
             catch 

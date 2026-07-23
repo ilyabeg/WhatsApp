@@ -4,27 +4,11 @@ using Client.UDP;
 
 namespace Client.Application
 {
-    internal class Bootloader
+    public class Bootloader
     {
-        private static IClient _client;
-        public static void Boot(char desition) 
+        public static IClient BootClient(bool isUDP)
         {
-            if (desition == 'T' || desition == 't')
-                BootTCP();
-            else
-                BootUDP();
-        }
-
-        private static void BootUDP()
-        {
-            _client = new ClientUDP();
-            _client.Start();
-        }
-
-        private static void BootTCP()
-        {
-            _client = new ClientTCP();
-            _client.Start();
+            return isUDP ? new ClientUDP() : new ClientTCP();
         }
     }
 }

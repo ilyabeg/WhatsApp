@@ -8,7 +8,7 @@
              d:DesignHeight="70" d:DesignWidth="180">
     
     <Grid Background="{StaticResource AllUsersHeaderBrush}" >
-        <TextBlock x:Name="ActiveUsersTxtBlock" Style="{StaticResource ActiveUsersBlockStyle}" />
+        <TextBlock Style="{StaticResource ActiveUsersBlockStyle}" />
     </Grid>
     
 </UserControl>

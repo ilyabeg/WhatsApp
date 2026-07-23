@@ -1,7 +1,9 @@
-﻿using Client.Interfaces;
+﻿using Client.Events;
+using Client.Interfaces;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows;
 using System.Windows.Input;
 using WhatsAppUI.View.Helpers;
 
@@ -11,7 +13,11 @@ namespace WhatsAppUI.View.ViewModels
     {
         // selected user
         private IChatItem _remoteClient;
+        private IClient _thisClient;
         public ObservableCollection<MessageBubble> Messages { get; set; }
+
+        // public crash event
+        public event Action<string> OnSystemCrash;
 
         // user input
         private string _message;
@@ -27,23 +33,52 @@ namespace WhatsAppUI.View.ViewModels
 
         public ICommand SendCommand { get; } // <- send button click command
         public ICommand ClearCommand { get; } // <- clear msgBox command
-        public ChatViewModel()
+        public ChatViewModel(IClient thisClient, IChatItem selectedClient)
         {
             Messages = new();
             SendCommand = new RelayCommand(ExecuteSend, CanExecuteSend);
             ClearCommand = new RelayCommand(ExecuteClear, CanExecuteClear);
+
+            _thisClient = thisClient;
+            _thisClient.OnMessageReceived += MessageRecievedHandler;
+            _thisClient.OnSystemError += SystemErrorHandler;
+
+            _remoteClient = selectedClient;
         }
 
         // send command
         private void ExecuteSend(object parameter)
         {
-            //Send(this.Message, _remoteClient)
+            // send the message to the reomte client
+            _thisClient.SendUnicastMessage(_remoteClient.ChatItemName, this.Message);
 
             Messages.Add(new MessageBubble(this.Message, true)); // <- add the message that was sent by me
             this.Message = "";
         }
-        private bool CanExecuteSend(object parameter) => !string.IsNullOrWhiteSpace(this.Message); // && _remoteClient != null;
+        private bool CanExecuteSend(object parameter) => !string.IsNullOrWhiteSpace(this.Message) && _remoteClient != null;
 
+
+        // Message Recieved event handler
+        private void MessageRecievedHandler(object sender, MessageRecievedEventArgs e)
+        {
+            // display message only if the message is from my current peer
+            if (e.Sender == _remoteClient.ChatItemName)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Messages.Add(new MessageBubble(e.Message, false)); // <- false = Message sent NOT by me
+                });
+            }            
+        }
+
+        // System Error handler
+        private void SystemErrorHandler(object sender, SystemErrorEventArgs e)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                OnSystemCrash?.Invoke(e.ErrorMessage);
+            });
+        }
 
         // clear command
         private void ExecuteClear(object parameter) => this.Message = "";
