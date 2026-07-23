@@ -11,8 +11,14 @@
              d:DesignHeight="450" d:DesignWidth="180">
 
     <Grid Background="{StaticResource UsersListBrush}" >
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
-        <ListBox Background="Transparent" ItemsSource="{Binding ChatItems}" SelectedItem="{Binding SelectedChat, Mode=TwoWay}">
+        <ContentControl Grid.Row="0" Content="{Binding ThisClient}" />
+
+        <ListBox Grid.Row="1" Background="Transparent" ItemsSource="{Binding ChatItems}" SelectedItem="{Binding SelectedChat, Mode=TwoWay}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     

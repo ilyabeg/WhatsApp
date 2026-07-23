@@ -9,7 +9,7 @@ using System.Text;
 
 namespace Client.TCP
 {
-    internal class ClientTCP : IClient
+    public class ClientTCP : IClient
     {
         // each tcp client is part client part server
 

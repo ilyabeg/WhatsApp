@@ -25,6 +25,9 @@
                 
                 <!-- Borders -->
                 <ResourceDictionary Source="/View/Styles/BorderStyles.xaml" />
+                
+                <!-- Client based List Templates -->
+                <ResourceDictionary Source="/View/Styles/ConnectionListTemplates.xaml" />
 
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>

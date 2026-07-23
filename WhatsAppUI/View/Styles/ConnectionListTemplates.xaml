@@ -1,0 +1,23 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    
+                    xmlns:UDP="clr-namespace:Client.UDP;assembly=Client"
+                    xmlns:TCP="clr-namespace:Client.TCP;assembly=Client">
+                    
+    <!-- UdpClient Grid with 3 group chat Buttons -->
+    <DataTemplate DataType="{x:Type UDP:ClientUDP}">
+        <Grid>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,8">
+                <Button Content="" Margin="2" />
+                <Button Content="" Margin="2" />
+                <Button Content="" Margin="2" />
+            </StackPanel>
+        </Grid>
+    </DataTemplate>
+
+    <!-- Regular Grid for TCP client -->
+    <DataTemplate DataType="{x:Type TCP:ClientTCP}"> 
+        <Grid />
+    </DataTemplate>
+    
+</ResourceDictionary>
