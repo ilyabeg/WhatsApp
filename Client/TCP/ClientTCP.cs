@@ -47,6 +47,11 @@ namespace Client.TCP
             throw new NotImplementedException();
         }
 
+        public void DisconnectClient()
+        {
+
+        }
+
         public List<string> GetActiveUsers()
         {
             return _users.Keys.ToList();

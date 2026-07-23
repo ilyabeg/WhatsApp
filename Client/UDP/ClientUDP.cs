@@ -36,14 +36,6 @@ namespace Client.UDP
         private readonly int _listening_port = 20000;
         public readonly IPEndPoint _listeningEndPoint;
 
-        // declare console event and static reference to prevent garbage collection
-        private delegate bool ConsoleEventDelegate(int eventType);
-        private static ConsoleEventDelegate? _handler; 
-
-        // import winAPI dll to use the SetConsoleCtrlHandler method
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool SetConsoleCtrlHandler(ConsoleEventDelegate callback, bool add);
-
         public ClientUDP()
         {
             _users = new Dictionary<string, IPEndPoint>();
@@ -57,30 +49,20 @@ namespace Client.UDP
             _listeningEndPoint = new IPEndPoint(IPAddress.Any, _listening_port);
             InitListener();
 
-            Task.Run(ListenForBroadcast); // run broadcast listener task in the background            
-
-            // make new event delegate that runs the event callback 
-            _handler = new ConsoleEventDelegate(ConsoleEventCallback);
-            SetConsoleCtrlHandler(_handler, true);
+            Task.Run(ListenForBroadcast); // run broadcast listener task in the background
         }
 
-        /// <summary>
-        /// event callback that executes this code upon closing the console application using CTRL+C or X button
-        /// </summary>
-        /// <param name="eventType"></param>
-        /// <returns></returns>
-        private bool ConsoleEventCallback(int eventType)
+        public void DisconnectClient()
         {
-            // 2 represents CTRL_CLOSE_EVENT (the X button)
-            // 0 represents CTRL+C 
-            if (eventType == 2 || eventType == 0)
+            if (_client != null && !string.IsNullOrEmpty(_username))
             {
                 // broadcast to everyone that this user disconnected
                 MulticastGroup.SendToMulticastGroup($"$DISCONNECT_USER_SIGNAL$#{_username}", _client);
-            }
 
-            // return false to let normal OS termination continue
-            return false;
+                // disconnect client
+                _client.Close();
+                _listener.Close();
+            }
         }
 
         private void InitListener()

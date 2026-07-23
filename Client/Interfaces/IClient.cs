@@ -6,6 +6,7 @@ namespace Client.Interfaces
     {
         public void SendUnicastMessage(string remoteClientName, string message);
         public bool Connect(string username);
+        public void DisconnectClient();
 
         public List<string> GetActiveUsers();
 
