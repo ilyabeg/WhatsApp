@@ -10,7 +10,7 @@ namespace WhatsAppUI.View.ViewModels
     internal class LoginViewModel : INotifyPropertyChanged
     {
         public event Action<IClient> OnLoginSuccess; // <- event for switching from main window into the chat window
-        public event Func<bool> OnProtocolChoice; // <- event to choose protocol
+        private bool _isUDP; // boolean to know which client to boot
 
         private string _username = "";
         public string Username
@@ -35,8 +35,10 @@ namespace WhatsAppUI.View.ViewModels
         }
 
         public ICommand RegisterCommand { get; }
-        public LoginViewModel()
+        public LoginViewModel(bool isUdpProtocol)
         {
+            _isUDP = isUdpProtocol;
+
             LoginText = "Please enter your Username:";
 
             // init Register Button Binded command
@@ -45,9 +47,7 @@ namespace WhatsAppUI.View.ViewModels
 
         private void Register(object parameter)
         {
-            // boot protocol chosen client            
-            bool choice = OnProtocolChoice.Invoke(); // <- choose protocol by MessageBox
-            IClient newClient = Bootloader.BootClient(choice);
+            IClient newClient = Bootloader.BootClient(_isUDP);
 
             // Username authorization using Model logic
             bool isFree = newClient.Connect(this.Username);

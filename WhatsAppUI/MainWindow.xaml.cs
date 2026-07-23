@@ -11,10 +11,12 @@ namespace WhatsAppUI
         {
             InitializeComponent();
 
-            LoginViewModel viewModel = new LoginViewModel();
+            // get user protocol choice
+            bool choice = ChooseProtocol();
+
+            LoginViewModel viewModel = new LoginViewModel(choice);
 
             viewModel.OnLoginSuccess += OpenChatWindow; // <- subscribe to login success event
-            viewModel.OnProtocolChoice += ChooseProtocol;
 
             DataContext = viewModel;
         }
