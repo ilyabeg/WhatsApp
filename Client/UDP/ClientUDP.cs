@@ -100,14 +100,15 @@ namespace Client.UDP
         /// <param name="username"></param>
         public bool Connect(string username)
         {
-            bool isFree = UsernameAuthorizer.IsFreeUsername(username, _listener);
+            _client = new UdpClient(new IPEndPoint(IPAddress.Any, 0)); // bind to any port and ip
+            Task.Run(Listen); // run user listener task in the background
+
+            bool isFree = UsernameAuthorizer.IsFreeUsername(username, _client);
+
             if (isFree)
             {
                 _username = username;
-                this.ChatItemName = username;
-
-                _client = new UdpClient(new IPEndPoint(IPAddress.Any, 0)); // bind to any port and ip
-                Task.Run(Listen); // run user listener task in the background
+                this.ChatItemName = username;                
 
                 // broadcast my existence
                 MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}", _client);
@@ -115,7 +116,11 @@ namespace Client.UDP
                 OnUserChanged?.Invoke(this, new UserChangedEventArgs(username, State.Connecting));
                 return true; 
             }
-            // taken...
+
+            // if taken we kill the new empty client...
+            _client.Close();
+            _listener.Close();
+
             return false;
         }
 
@@ -186,14 +191,23 @@ namespace Client.UDP
             try
             {
                 string message = Encoding.UTF8.GetString(recievedBytes);
-                string[] splitted = message.Split(':');
 
-                if (splitted.Length == 2)
+                if (message.Equals("$USERNAME_IS_TAKEN$"))
                 {
-                    string sender = splitted[0];
-                    string actualMessage = splitted[1];
+                    UsernameAuthorizer.FreeUsername = false; // change free flag
+                    return;
+                }
+                else
+                {
+                    string[] splitted = message.Split(':');
 
-                    OnMessageReceived?.Invoke(this, new MessageRecievedEventArgs(sender, actualMessage));
+                    if (splitted.Length == 2)
+                    {
+                        string sender = splitted[0];
+                        string actualMessage = splitted[1];
+
+                        OnMessageReceived?.Invoke(this, new MessageRecievedEventArgs(sender, actualMessage));
+                    }
                 }                    
             }
             catch
@@ -239,14 +253,7 @@ namespace Client.UDP
         private void ReadBroadcast(byte[] receivedBytes, IPEndPoint remoteEndPoint)
         {
             try
-            {
-                string message = Encoding.UTF8.GetString(receivedBytes);
-                if (message.Equals("$USERNAME_IS_TAKEN$"))
-                {
-                    UsernameAuthorizer.FreeUsername = false; // change free flag
-                    return;
-                }
-
+            {                
                 if (CheckUsernameBroadcast(receivedBytes, remoteEndPoint)) return;
 
                 int executed_option = _broadcastHandler.HandleBroadcast(receivedBytes, remoteEndPoint, _users, _groupsManager);
