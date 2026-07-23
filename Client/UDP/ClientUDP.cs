@@ -4,7 +4,6 @@ using Client.Events;
 using Client.Interfaces;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Client.UDP
@@ -50,21 +49,7 @@ namespace Client.UDP
             InitListener();
 
             Task.Run(ListenForBroadcast); // run broadcast listener task in the background
-        }
-
-        public void DisconnectClient()
-        {
-            if (_client != null && !string.IsNullOrEmpty(_username))
-            {
-                // broadcast to everyone that this user disconnected
-                MulticastGroup.SendToMulticastGroup($"$DISCONNECT_USER_SIGNAL$#{_username}", _client);
-
-                // disconnect client
-                _client.Close();
-                _listener.Close();
-            }
-        }
-
+        }        
         private void InitListener()
         {
             _listener = new UdpClient();
@@ -75,6 +60,9 @@ namespace Client.UDP
             _listener.Client.Bind(_listeningEndPoint); // bind to multicast port
             MulticastGroup.AddToMulticastGroup(_listener);
         }
+
+
+        // <=== IClient methods ===>
 
         /// <summary>
         /// Returns true upon Connect succession, false if couldn't connect
@@ -106,6 +94,25 @@ namespace Client.UDP
             return false;
         }
 
+        /// <summary>
+        ///  Trigger safe Disconnect to client who closes his window
+        /// </summary>
+        private volatile bool _disconnecting = false;
+        public void DisconnectClient()
+        {
+            if (_client != null && !string.IsNullOrEmpty(_username))
+            {
+                _disconnecting = true;
+
+                // broadcast to everyone that this user disconnected
+                MulticastGroup.SendToMulticastGroup($"$DISCONNECT_USER_SIGNAL$#{_username}", _client);
+
+                // disconnect client
+                _client.Close();
+                _listener.Close();
+            }
+        }
+
         public void SendUnicastMessage(string remoteClientName, string message)
         {
             if (_users.TryGetValue(remoteClientName, out IPEndPoint remoteEndPoint))
@@ -121,10 +128,9 @@ namespace Client.UDP
             }
         }
 
-        public List<string> GetActiveUsers()
-        {
-            return _users.Keys.ToList();
-        }
+        public List<string> GetActiveUsers() => _users.Keys.ToList();
+
+
 
         // <=== Group chats methods ===>
 
@@ -148,6 +154,9 @@ namespace Client.UDP
             _groupsManager.LeaveGroup(_client, name);
         }
 
+
+        // <=== Client listening ===>
+
         /// <summary>
         /// Listens for incoming unicast messages
         /// </summary>
@@ -164,7 +173,9 @@ namespace Client.UDP
             }
             catch
             {
-                OnSystemError?.Invoke(this, new SystemErrorEventArgs("Couldn't recieve Unicast message."));
+                // if the user is disconnecting don't show system error msg boxes
+                if (!_disconnecting)
+                    OnSystemError?.Invoke(this, new SystemErrorEventArgs("Couldn't recieve Unicast message."));
             }
         }
 
@@ -212,6 +223,9 @@ namespace Client.UDP
             return null;
         }
 
+
+        // <=== Broadcast listening ===>
+
         /// <summary>
         /// Broadcast listener to add/remove users/groups from local memory
         /// </summary>
@@ -228,7 +242,8 @@ namespace Client.UDP
             }
             catch
             {
-                OnSystemError?.Invoke(this, new SystemErrorEventArgs("Connection to network lost."));
+                if (!_disconnecting)
+                    OnSystemError?.Invoke(this, new SystemErrorEventArgs("Connection to network lost."));
             }
         }
 
