@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using Client.Events;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Text;
 
@@ -18,7 +19,7 @@ namespace Client.UDP
             },
             ["$DISCONNECT_USER_SIGNAL$"] = (username, endpoint, users, groups) => // endpoint is useless here but necessary to invoke the func
             {
-                users.Remove(username);
+                users.Remove(username);                
                 return 2;
             },
             ["$ADD_GROUPS_SIGNAL$"] = (existingGroups, endpoint, user, groups) => // temps are useless here but necessary to invoke the func
@@ -28,6 +29,10 @@ namespace Client.UDP
             }
         };
 
+        // define public events to bubble over to the Client
+        public event EventHandler<MessageRecievedEventArgs> OnMessageReceived;
+        public event EventHandler<UserChangedEventArgs> OnUserChanged;
+
         /// <summary>
         /// if handler knows how to handle the broadcast, handle and return the number of the option
         /// else, return 0 (couldn't hanlde)
@@ -36,13 +41,34 @@ namespace Client.UDP
         {
             string recieved = Encoding.UTF8.GetString(recievedBytes);
             string[] splitted = recieved.Split('#');
+
+            if (splitted.Length < 2) return 0; // not signal
+
             string option = splitted[0];
+            string username = splitted[1];
 
+            int executed_option = 0;
             if (_options.ContainsKey(option))
-                return _options[option].Invoke(splitted[1], remoteEndPoint, users, groups);
+                executed_option = _options[option].Invoke(username, remoteEndPoint, users, groups);
 
-            // if handler doesn't recognise the broadcast return false
-            return 0;
+            // if handler doesn't recognise the broadcast signal the process it as a simple broadcast and return 0
+            if (executed_option == 0)
+            {
+                // has to be simple broadcast message for example: $"{username}#{message}"
+                string sender = splitted[0];
+                string message = splitted[1];
+
+                OnMessageReceived?.Invoke(this, new MessageRecievedEventArgs(sender, message));
+            }
+
+            // if we removed the user invoke user changed event
+            else if (executed_option == 2)
+            {
+                // notify UI the users list
+                OnUserChanged?.Invoke(this, new UserChangedEventArgs(username, State.Disconnecting));
+            }                      
+
+            return executed_option;
         }
     }
 }

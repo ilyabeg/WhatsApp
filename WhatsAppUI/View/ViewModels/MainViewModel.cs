@@ -32,15 +32,15 @@ namespace WhatsAppUI.View.ViewModels
         }
 
         // current client (ME)
-        private IClient _thisClient;
+        public IClient ThisClient { get; }
 
         public MainViewModel(IClient thisClient)
         {
             ChatItems = new();
             ChatViewModel = new ChatViewModel(thisClient, _selectedChat); // <- pass in me (the client)
 
-            _thisClient = thisClient;
-            _thisClient.OnUserChanged += UserChangedHandler;
+            ThisClient = thisClient;
+            ThisClient.OnUserChanged += UserChangedHandler;
 
             AddActiveUsers();
         }        
@@ -85,7 +85,7 @@ namespace WhatsAppUI.View.ViewModels
         /// </summary>
         private void AddActiveUsers()
         {
-            List<string> activeUsers = _thisClient.GetActiveUsers();
+            List<string> activeUsers = ThisClient.GetActiveUsers();
 
             foreach (string username in activeUsers)
             {

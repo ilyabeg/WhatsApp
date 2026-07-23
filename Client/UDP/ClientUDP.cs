@@ -8,7 +8,7 @@ using System.Text;
 
 namespace Client.UDP
 {
-    internal class ClientUDP : IClient
+    public class ClientUDP : IClient
     {
         // define public events for ViewModel to subscribe to
         public event EventHandler<MessageRecievedEventArgs> OnMessageReceived;
@@ -44,6 +44,10 @@ namespace Client.UDP
             // event bubbling from group chats
             _groupsManager.OnSystemError += (s, e) => OnSystemError?.Invoke(this, e);
             _groupsManager.OnGroupChange += (s, e) => OnGroupsChanged?.Invoke(this, e);
+
+            // event bubbling from broadcast handler
+            _broadcastHandler.OnMessageReceived += (s, e) => OnMessageReceived?.Invoke(this, e);
+            _broadcastHandler.OnUserChanged += (s, e) => OnUserChanged?.Invoke(this, e);
 
             _listeningEndPoint = new IPEndPoint(IPAddress.Any, _listening_port);
             InitListener();
@@ -115,9 +119,9 @@ namespace Client.UDP
 
         public void SendUnicastMessage(string remoteClientName, string message)
         {
-            if (_users.TryGetValue(remoteClientName, out IPEndPoint remoteEndPoint))
+            if (!string.IsNullOrWhiteSpace(message) && _users.TryGetValue(remoteClientName, out IPEndPoint remoteEndPoint))
             {
-                string sendingMessage = $"{_username}:{message}";
+                string sendingMessage = $"{_username}#{message.Trim()}";
 
                 byte[] buffer = Encoding.UTF8.GetBytes(sendingMessage);
                 _client.Send(buffer, buffer.Length, remoteEndPoint);
@@ -125,6 +129,19 @@ namespace Client.UDP
             else
             {
                 OnSystemError?.Invoke(this, new SystemErrorEventArgs("Couldn't send Unicast message."));
+            }
+        }
+
+        public void SendBroadcast(string message)
+        {
+            if (!string.IsNullOrWhiteSpace(message) && message.Trim().StartsWith("@all"))
+            {
+                string sendingMessage = $"{_username}#{message.Trim()}";
+                MulticastGroup.SendToMulticastGroup(sendingMessage, _client);
+            }
+            else
+            {
+                OnSystemError?.Invoke(this, new SystemErrorEventArgs("Couldn't send Broadcast message."));
             }
         }
 
@@ -192,7 +209,7 @@ namespace Client.UDP
                 }
                 else
                 {
-                    string[] splitted = message.Split(':');
+                    string[] splitted = message.Split('#');
 
                     if (splitted.Length == 2)
                     {
@@ -254,18 +271,9 @@ namespace Client.UDP
                 if (CheckUsernameBroadcast(receivedBytes, remoteEndPoint)) return;
 
                 int executed_option = _broadcastHandler.HandleBroadcast(receivedBytes, remoteEndPoint, _users, _groupsManager);
-                // if broadcast handler couldn't handle the broadcast, try to process it as a Data Packet
-                if (executed_option == 0)
-                {
-                    DataPacket packet = DataPacket.TransferData(receivedBytes);
-                    if (packet != null)
-                    {
-                        OnMessageReceived?.Invoke(this, new MessageRecievedEventArgs(packet.Author, packet.Message));
-                    }
-                }
 
                 // if new user added
-                else if (executed_option == 1)
+                if (executed_option == 1)
                 {
                     // notify UI the users list
                     OnUserChanged?.Invoke(this, new UserChangedEventArgs(RemoteClientAt(remoteEndPoint), State.Connecting));
@@ -277,19 +285,10 @@ namespace Client.UDP
                     if (existing_groups != null)
                         MulticastGroup.SendToMulticastGroup($"$ADD_GROUPS_SIGNAL$#{existing_groups}", _client);
                 }
-
-                // if user disconnected
-                else if (executed_option == 2)
-                {
-                    string str = Encoding.UTF8.GetString(receivedBytes);
-                    string[] splitted = str.Split('#');
-                    string username = splitted[1];
-                    OnUserChanged?.Invoke(this, new UserChangedEventArgs(username, State.Disconnecting));
-                }
             }
             catch 
             {
-                OnSystemError?.Invoke(this, new SystemErrorEventArgs("Couldn't recieve Unicast message."));
+                OnSystemError?.Invoke(this, new SystemErrorEventArgs("Couldn't recieve Broadcast message."));
             }
         }
 

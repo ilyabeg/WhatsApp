@@ -1,5 +1,6 @@
 ﻿using Client.Events;
 using Client.Interfaces;
+using Client.UDP;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -49,10 +50,15 @@ namespace WhatsAppUI.View.ViewModels
         // send command
         private void ExecuteSend(object parameter)
         {
-            // send the message to the reomte client
-            _thisClient.SendUnicastMessage(_remoteClient.ChatItemName, this.Message);
+            // if client is using UDP allow him to send Broadcast
+            if (this.Message.Trim().StartsWith("@all") && _thisClient is ClientUDP udpClient)
+                udpClient.SendBroadcast(this.Message);
 
-            Messages.Add(new MessageBubble(this.Message, true)); // <- add the message that was sent by me
+            // send the message to the reomte client
+            else
+                _thisClient.SendUnicastMessage(_remoteClient.ChatItemName, this.Message);
+
+            Messages.Add(new MessageBubble($"Me: {this.Message}", true)); // <- add the message that was sent by me
             this.Message = "";
         }
         private bool CanExecuteSend(object parameter) => !string.IsNullOrWhiteSpace(this.Message) && _remoteClient != null;
@@ -61,12 +67,14 @@ namespace WhatsAppUI.View.ViewModels
         // Message Recieved event handler
         private void MessageRecievedHandler(object sender, MessageRecievedEventArgs e)
         {
-            // display message only if the message is from my current peer
-            if (e.Sender == _remoteClient.ChatItemName)
+            if (e.Sender == _thisClient.ChatItemName) return; // not get my own messages
+
+            // display message only if the message is from my current peer or a Broadcast was sent
+            if (e.Message.StartsWith("@all") || e.Sender == _remoteClient.ChatItemName)
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    Messages.Add(new MessageBubble(e.Message, false)); // <- false = Message sent NOT by me
+                    Messages.Add(new MessageBubble($"{e.Sender}: {e.Message}", false)); // <- false = Message sent NOT by me
                 });
             }            
         }
