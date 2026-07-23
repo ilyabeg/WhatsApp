@@ -57,8 +57,7 @@ namespace Client.UDP
             _listeningEndPoint = new IPEndPoint(IPAddress.Any, _listening_port);
             InitListener();
 
-            Task.Run(ListenForBroadcast); // run broadcast listener task in the background
-            Task.Run(Listen); // run user listener task in the background
+            Task.Run(ListenForBroadcast); // run broadcast listener task in the background            
 
             // make new event delegate that runs the event callback 
             _handler = new ConsoleEventDelegate(ConsoleEventCallback);
@@ -108,6 +107,7 @@ namespace Client.UDP
                 this.ChatItemName = username;
 
                 _client = new UdpClient(new IPEndPoint(IPAddress.Any, 0)); // bind to any port and ip
+                Task.Run(Listen); // run user listener task in the background
 
                 // broadcast my existence
                 MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}", _client);
@@ -123,7 +123,9 @@ namespace Client.UDP
         {
             if (_users.TryGetValue(remoteClientName, out IPEndPoint remoteEndPoint))
             {
-                byte[] buffer = Encoding.UTF8.GetBytes(message);
+                string sendingMessage = $"{_username}:{message}";
+
+                byte[] buffer = Encoding.UTF8.GetBytes(sendingMessage);
                 _client.Send(buffer, buffer.Length, remoteEndPoint);
             }
             else
@@ -173,7 +175,7 @@ namespace Client.UDP
                     Read(recievedBytes, remoteEndPoint);
                 }
             }
-            catch (Exception e)
+            catch
             {
                 OnSystemError?.Invoke(this, new SystemErrorEventArgs("Couldn't recieve Unicast message."));
             }
@@ -184,11 +186,15 @@ namespace Client.UDP
             try
             {
                 string message = Encoding.UTF8.GetString(recievedBytes);
+                string[] splitted = message.Split(':');
 
-                if (message.Equals("$USERNAME_IS_TAKEN$")) 
-                    UsernameAuthorizer.FreeUsername = false; // change free flag
-                else
-                    OnMessageReceived?.Invoke(this, new MessageRecievedEventArgs(RemoteClientAt(remoteEP), message));
+                if (splitted.Length == 2)
+                {
+                    string sender = splitted[0];
+                    string actualMessage = splitted[1];
+
+                    OnMessageReceived?.Invoke(this, new MessageRecievedEventArgs(sender, actualMessage));
+                }                    
             }
             catch
             {
@@ -224,7 +230,7 @@ namespace Client.UDP
                     ReadBroadcast(recievedBytes, remoteEndPoint);
                 }
             }
-            catch (Exception)
+            catch
             {
                 OnSystemError?.Invoke(this, new SystemErrorEventArgs("Connection to network lost."));
             }
@@ -234,6 +240,13 @@ namespace Client.UDP
         {
             try
             {
+                string message = Encoding.UTF8.GetString(receivedBytes);
+                if (message.Equals("$USERNAME_IS_TAKEN$"))
+                {
+                    UsernameAuthorizer.FreeUsername = false; // change free flag
+                    return;
+                }
+
                 if (CheckUsernameBroadcast(receivedBytes, remoteEndPoint)) return;
 
                 int executed_option = _broadcastHandler.HandleBroadcast(receivedBytes, remoteEndPoint, _users, _groupsManager);
