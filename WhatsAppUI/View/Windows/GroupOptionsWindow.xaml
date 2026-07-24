@@ -22,10 +22,10 @@
         <TextBlock x:Name="txtBlock" Grid.Row="0" Text="Enter Group Name:" FontSize="16" FontWeight="Medium" Margin="0,0,0,10"/>
 
         <!-- Create Group textbox -->
-        <TextBox x:Name="InputTextBox" Grid.Row="1" VerticalAlignment="Top" FontSize="16" />
+        <TextBox x:Name="inputTxt" Grid.Row="1" VerticalAlignment="Top" FontSize="16" />
 
         <!-- Join or Leave listbox of Groups -->
-        <ListBox x:Name="GroupListBox" Grid.Row="1" Visibility="Collapsed" FontSize="16">
+        <ListBox x:Name="groupsListBox" Grid.Row="1" Visibility="Collapsed" FontSize="16">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <TextBlock Text="{Binding}" />
@@ -33,8 +33,10 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
+        <TextBlock x:Name="noGroupsTxtBlock" Grid.Row="1" Text="None." FontStyle="Italic" Foreground="{StaticResource PlaceHolderTextBrush}" FontSize="16" FontWeight="Medium" Margin="0,0,0,10"/>
+
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
-            <Button Content="Cancel" IsCancel="True" Margin="0,0,10,0" Style="{StaticResource MaterialDesignOutlinedButton}"/>
+            <Button Content="Cancel" IsCancel="True" Margin="0,0,10,0" Style="{StaticResource MaterialDesignOutlinedButton}" Click="CancelButton_Click"/>
             <Button Content="OK" IsDefault="True" Click="OkButton_Click" />
         </StackPanel>
     </Grid>

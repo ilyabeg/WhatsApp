@@ -69,7 +69,7 @@
 
             <TextBlock Text="{Binding MembersCount, StringFormat=' ({0})'}" 
                    FontSize="13" 
-                   Foreground="Gray"
+                   Foreground="{StaticResource PrimaryTextBrush}"
                    VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>

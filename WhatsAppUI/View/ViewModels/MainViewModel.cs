@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
 using WhatsAppUI.View.Helpers;
+using WhatsAppUI.View.Windows;
 
 namespace WhatsAppUI.View.ViewModels
 {
@@ -143,28 +144,29 @@ namespace WhatsAppUI.View.ViewModels
 
 
         // <=== Group Buttons Commands ===>
+
+        // events to open groupchat options window 
+        public event Action OnNewGroupChat;
+        public event Action<List<string>> OnJoinGroupChat;
+        public event Action<List<string>> OnLeaveGroupChat;
+
         private void ExecuteNewGroup(object parameter)
         {
-            if (ThisClient is ClientUDP thisUdpClient)
-            {
-                thisUdpClient.CreateGroup("GROUP1");
-            }
+            OnNewGroupChat?.Invoke();
         }
-
         private void ExecuteJoinGroup(object parameter)
         {
-            if (ThisClient is ClientUDP thisUdpClient)
-            {
-                thisUdpClient.JoinGroup("GROUP1");
-            }
-        }
+            List<GroupChat> groups = ChatItems.OfType<GroupChat>().ToList();
+            List<string> groupNames = groups.Select(group => group.ChatItemName).ToList();
 
+            OnJoinGroupChat?.Invoke(groupNames);
+        }
         private void ExecuteLeaveGroup(object parameter)
         {
-            if (ThisClient is ClientUDP thisUdpClient)
-            {
-                thisUdpClient.LeaveGroup("GROUP1");
-            }
+            List<GroupChat> groups = ChatItems.OfType<GroupChat>().ToList();
+            List<string> groupNames = groups.Select(group => group.ChatItemName).ToList();
+
+            OnLeaveGroupChat?.Invoke(groupNames);            
         }
 
 
