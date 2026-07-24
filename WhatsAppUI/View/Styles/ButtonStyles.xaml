@@ -69,4 +69,17 @@
         </Setter>
     </Style>
 
+    <!-- UDP client Group chats button options style -->
+    <Style x:Key="GroupOptionButton" TargetType="Button" >
+        <Setter Property="Background" Value="{StaticResource ChatBackgroundBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="BorderThickness" Value=".5" />
+        <Setter Property="BorderBrush" Value="{StaticResource PlaceHolderTextBrush}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Margin" Value="2,1,2,1"/>
+        <Setter Property="Height" Value="Auto" />
+    </Style>
+
 </ResourceDictionary>

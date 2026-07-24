@@ -7,10 +7,10 @@
     <!-- UdpClient Grid with 3 group chat Buttons -->
     <DataTemplate DataType="{x:Type UDP:ClientUDP}">
         <Grid>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,8">
-                <Button Content="" Margin="2" />
-                <Button Content="" Margin="2" />
-                <Button Content="" Margin="2" />
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Center" >
+                <Button Content="New Group" Style="{StaticResource GroupOptionButton}" />
+                <Button Content="Join Group" Style="{StaticResource GroupOptionButton}" />
+                <Button Content="Leave Group" Style="{StaticResource GroupOptionButton}" />
             </StackPanel>
         </Grid>
     </DataTemplate>
