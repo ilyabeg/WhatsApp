@@ -1,16 +1,21 @@
 ﻿using Client.Client_Related;
 using Client.Events;
 using Client.Interfaces;
-using Client.Client_Related;
+using Client.UDP;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Windows.Input;
+using WhatsAppUI.View.Helpers;
 
 namespace WhatsAppUI.View.ViewModels
 {
     internal class MainViewModel : INotifyPropertyChanged
     {
+        // System crash event handler to pop MsgBox in chatting window
+        public event Action<string> OnSystemCrash;
+
         // Users and Groups list
         public ObservableCollection<IChatItem> ChatItems { get; set; }
 
@@ -35,6 +40,11 @@ namespace WhatsAppUI.View.ViewModels
         // current client (ME)
         public IClient ThisClient { get; }
 
+        // UDP client group button options commands
+        public ICommand NewGroupCommand { get; }
+        public ICommand JoinGroupCommand { get; }
+        public ICommand LeaveGroupCommand { get; }
+
         public MainViewModel(IClient thisClient)
         {
             ChatItems = new();
@@ -43,11 +53,17 @@ namespace WhatsAppUI.View.ViewModels
             ThisClient = thisClient;
             ThisClient.OnUserChanged += UserChangedHandler;
             ThisClient.OnGroupsChanged += GroupsChangedHandler;
+            ThisClient.OnSystemError += SystemErrorHandler;
 
             AddActiveUsers();
+
+            NewGroupCommand = new RelayCommand(ExecuteNewGroup);
+            JoinGroupCommand = new RelayCommand(ExecuteJoinGroup);
+            LeaveGroupCommand = new RelayCommand(ExecuteLeaveGroup);
         }        
 
-        // event handlers
+
+        // <=== Event Handlers ===>
         private void UserChangedHandler(object sender, UserChangedEventArgs e)
         {
             Application.Current.Dispatcher.Invoke(() =>
@@ -70,6 +86,15 @@ namespace WhatsAppUI.View.ViewModels
                         ChatItems.Remove(user);
                     }
                 }
+            });
+        }
+
+        // invoke system error event in chatting window to throw MessageBox Error
+        private void SystemErrorHandler(object sender, SystemErrorEventArgs e)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                OnSystemCrash?.Invoke(e.ErrorMessage);
             });
         }
 
@@ -128,6 +153,33 @@ namespace WhatsAppUI.View.ViewModels
             }
             return null;
         }
+
+
+        // <=== Group Buttons Commands ===>
+        private void ExecuteNewGroup(object parameter)
+        {
+            if (ThisClient is ClientUDP thisUdpClient)
+            {
+                thisUdpClient.CreateGroup("");
+            }
+        }
+
+        private void ExecuteJoinGroup(object parameter)
+        {
+            if (ThisClient is ClientUDP thisUdpClient)
+            {
+                thisUdpClient.JoinGroup("");
+            }
+        }
+
+        private void ExecuteLeaveGroup(object parameter)
+        {
+            if (ThisClient is ClientUDP thisUdpClient)
+            {
+                thisUdpClient.LeaveGroup("");
+            }
+        }
+
 
         /// <summary>
         /// Adds all current active users to the ChatItems list at the begining of each connection

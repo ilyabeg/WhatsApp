@@ -11,7 +11,8 @@ namespace WhatsAppUI.View.Windows
             InitializeComponent();
 
             MainViewModel mainViewModel = new MainViewModel(thisClient);
-            mainViewModel.ChatViewModel.OnSystemCrash += ShowSystemError;
+            mainViewModel.OnSystemCrash += ShowSystemError;               // MainViewModel System Errors
+            mainViewModel.ChatViewModel.OnSystemCrash += ShowSystemError; // ChatViewModel System Errors
 
             // attach window closing event to DisconnectClient method inside each client to remove from View
             this.Closing += (s, e) =>

@@ -11,9 +11,19 @@
     <DataTemplate DataType="{x:Type UDP:ClientUDP}">
         <Grid>
             <StackPanel Orientation="Vertical" HorizontalAlignment="Center" >
-                <Button Content="New Group" Style="{StaticResource GroupOptionButton}" />
-                <Button Content="Join Group" Style="{StaticResource GroupOptionButton}" />
-                <Button Content="Leave Group" Style="{StaticResource GroupOptionButton}" />
+                
+                <Button Content="New Group" Style="{StaticResource GroupOptionButton}"
+                        Command="{Binding DataContext.NewGroupCommand, 
+                        RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                
+                <Button Content="Join Group" Style="{StaticResource GroupOptionButton}"
+                        Command="{Binding DataContext.JoinGroupCommand, 
+                        RelativeSource={RelativeSource AncestorType=UserControl}}" />
+
+                <Button Content="Leave Group" Style="{StaticResource GroupOptionButton}"
+                        Command="{Binding DataContext.LeaveGroupCommand, 
+                        RelativeSource={RelativeSource AncestorType=UserControl}}" />
+
             </StackPanel>
         </Grid>
     </DataTemplate>
