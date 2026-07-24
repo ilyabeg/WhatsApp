@@ -11,7 +11,6 @@ namespace Client.UDP
     internal class GroupChats
     {        
         public Dictionary<string, GroupChat> groupChats { get; private set; } = new Dictionary<string, GroupChat>();
-        private readonly int _buffer_size = 4096;
         private readonly int _portNum = 20000;
 
         private readonly object _lock = new object();

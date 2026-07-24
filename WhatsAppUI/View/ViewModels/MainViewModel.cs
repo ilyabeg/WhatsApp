@@ -13,9 +13,6 @@ namespace WhatsAppUI.View.ViewModels
 {
     internal class MainViewModel : INotifyPropertyChanged
     {
-        // System crash event handler to pop MsgBox in chatting window
-        public event Action<string> OnSystemCrash;
-
         // Users and Groups list
         public ObservableCollection<IChatItem> ChatItems { get; set; }
 
@@ -53,7 +50,6 @@ namespace WhatsAppUI.View.ViewModels
             ThisClient = thisClient;
             ThisClient.OnUserChanged += UserChangedHandler;
             ThisClient.OnGroupsChanged += GroupsChangedHandler;
-            ThisClient.OnSystemError += SystemErrorHandler;
 
             AddActiveUsers();
 
@@ -86,15 +82,6 @@ namespace WhatsAppUI.View.ViewModels
                         ChatItems.Remove(user);
                     }
                 }
-            });
-        }
-
-        // invoke system error event in chatting window to throw MessageBox Error
-        private void SystemErrorHandler(object sender, SystemErrorEventArgs e)
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                OnSystemCrash?.Invoke(e.ErrorMessage);
             });
         }
 
@@ -160,7 +147,7 @@ namespace WhatsAppUI.View.ViewModels
         {
             if (ThisClient is ClientUDP thisUdpClient)
             {
-                thisUdpClient.CreateGroup("");
+                thisUdpClient.CreateGroup("GROUP1");
             }
         }
 
@@ -168,7 +155,7 @@ namespace WhatsAppUI.View.ViewModels
         {
             if (ThisClient is ClientUDP thisUdpClient)
             {
-                thisUdpClient.JoinGroup("");
+                thisUdpClient.JoinGroup("GROUP1");
             }
         }
 
@@ -176,7 +163,7 @@ namespace WhatsAppUI.View.ViewModels
         {
             if (ThisClient is ClientUDP thisUdpClient)
             {
-                thisUdpClient.LeaveGroup("");
+                thisUdpClient.LeaveGroup("GROUP1");
             }
         }
 

@@ -46,11 +46,10 @@ namespace Client.UDP
             if (splitted.Length < 2) return 0; // not signal
 
             string option = splitted[0];
-            string username = splitted[1];
 
             int executed_option = 0;
             if (_options.ContainsKey(option))
-                executed_option = _options[option].Invoke(username, remoteEndPoint, users, groups);
+                executed_option = _options[option].Invoke(splitted[1], remoteEndPoint, users, groups);
 
             CheckExecutedOption(executed_option, recieved);
 
