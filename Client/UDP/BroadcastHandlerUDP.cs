@@ -7,11 +7,11 @@ namespace Client.UDP
 {
     internal class BroadcastHandlerUDP
     {
-        private ConcurrentDictionary<string, Func<string, IPEndPoint, Dictionary<string,  IPEndPoint>, GroupChats, int>> _options = new()
+        private ConcurrentDictionary<string, Func<string, IPEndPoint, Dictionary<string, IPEndPoint>, GroupChats, int>> _options = new()
         {
             ["$NEW_USER_SIGNAL$"] = (username, endpoint, users, groups) =>
             {
-                if (users.ContainsKey(username)) 
+                if (users.ContainsKey(username))
                     return -1; // <- returns a different option than 1 to not cause infinite loop
 
                 users.TryAdd(username, endpoint);
@@ -19,14 +19,15 @@ namespace Client.UDP
             },
             ["$DISCONNECT_USER_SIGNAL$"] = (username, endpoint, users, groups) => // endpoint is useless here but necessary to invoke the func
             {
-                users.Remove(username);                
+                users.Remove(username);
                 return 2;
             },
             ["$ADD_GROUPS_SIGNAL$"] = (existingGroups, endpoint, user, groups) => // temps are useless here but necessary to invoke the func
             {
                 groups.AddGroups(existingGroups);
                 return 3;
-            }
+            },
+            ["$GROUP_MESSAGE$"] = (existingGroups, endpoint, user, groups) => 4 // return signal code 4
         };
 
         // define public events to bubble over to the Client
@@ -51,6 +52,15 @@ namespace Client.UDP
             if (_options.ContainsKey(option))
                 executed_option = _options[option].Invoke(username, remoteEndPoint, users, groups);
 
+            CheckExecutedOption(executed_option, recieved);
+
+            return executed_option;
+        }
+
+        private void CheckExecutedOption(int executed_option, string received_string)
+        {
+            string[] splitted = received_string.Split('#');
+
             // if handler doesn't recognise the broadcast signal the process it as a simple broadcast and return 0
             if (executed_option == 0)
             {
@@ -63,12 +73,18 @@ namespace Client.UDP
 
             // if we removed the user invoke user changed event
             else if (executed_option == 2)
-            {
                 // notify UI the users list
-                OnUserChanged?.Invoke(this, new UserChangedEventArgs(username, State.Disconnecting));
-            }                      
+                OnUserChanged?.Invoke(this, new UserChangedEventArgs(splitted[1], State.Disconnecting));
 
-            return executed_option;
+            // if group message received invoke OnMessageReceived from the GroupChat name
+            if (executed_option == 4)
+            {
+                string groupName = splitted[1];
+                string sender = splitted[2];
+                string message = splitted[3];
+
+                OnMessageReceived?.Invoke(this, new MessageRecievedEventArgs(groupName, $"{sender}: {message}"));
+            }
         }
     }
 }

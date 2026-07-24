@@ -37,7 +37,7 @@ namespace Client.UDP
                 }
                 OnSystemError?.Invoke(this, new SystemErrorEventArgs($"GroupChat {name} already exists."));
             }
-            catch (Exception e)
+            catch
             {
                 OnSystemError?.Invoke(this, new SystemErrorEventArgs($"Couldn't create GroupChat {name}."));
             }
@@ -60,33 +60,32 @@ namespace Client.UDP
             return ip;
         }
 
-        public void SendToGroup(UdpClient client, string username, string name, string message)
+        public void SendToGroup(UdpClient client, string username, string groupName, string message)
         {
-            if (!groupChats.ContainsKey(name))
+            if (!groupChats.ContainsKey(groupName))
             {
-                OnSystemError?.Invoke(this, new SystemErrorEventArgs($"Group: {name} not found."));
+                OnSystemError?.Invoke(this, new SystemErrorEventArgs($"Group: {groupName} not found."));
                 return;
             }
 
             try
             {   // try catch block in case user is not a member of the group
-                client.JoinMulticastGroup(GenerateIP(name));
-                groupChats[name].MembersCount++;
+                client.JoinMulticastGroup(GenerateIP(groupName));
+                groupChats[groupName].MembersCount++;
                 OnGroupChange?.Invoke(this, new GroupChangedEventArgs(groupChats.Values.ToList()));
             }
             catch { }
 
             try
             {
-                byte[] _buffer = new byte[_buffer_size];
-                _buffer = Encoding.UTF8.GetBytes($"{username}: {message}");
+                byte[] _buffer = Encoding.UTF8.GetBytes($"$GROUP_MESSAGE$#{groupName}#{username}#{message}");
 
-                IPEndPoint endPoint = new IPEndPoint(GenerateIP(name), _portNum);
+                IPEndPoint endPoint = new IPEndPoint(GenerateIP(groupName), _portNum);
                 client.Send(_buffer, _buffer.Length, endPoint);
             }
             catch
             {
-                OnSystemError?.Invoke(this, new SystemErrorEventArgs($"Couldn't Send message to: {name}."));
+                OnSystemError?.Invoke(this, new SystemErrorEventArgs($"Couldn't Send message to: {groupName}."));
             }
         }
 

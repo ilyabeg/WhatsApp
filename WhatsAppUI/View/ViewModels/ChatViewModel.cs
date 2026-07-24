@@ -54,6 +54,10 @@ namespace WhatsAppUI.View.ViewModels
             if (this.Message.Trim().StartsWith("@all") && _thisClient is ClientUDP udpClient)
                 udpClient.SendBroadcast(this.Message);
 
+            // if Client is UDP and remote is group chat -> allow group chat message
+            else if (_thisClient is ClientUDP thisUdpClient && _remoteClient is GroupChat groupChat)
+                thisUdpClient.SendGroupMessage(groupChat.ChatItemName, this.Message);
+
             // send the message to the reomte client
             else
                 _thisClient.SendUnicastMessage(_remoteClient.ChatItemName, this.Message);

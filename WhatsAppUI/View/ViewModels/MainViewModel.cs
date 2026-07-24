@@ -1,10 +1,11 @@
-﻿using System.Collections.ObjectModel;
+﻿using Client.Client_Related;
+using Client.Events;
+using Client.Interfaces;
+using Client.UDP;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
-using Client.Events;
-using Client.Interfaces;
-using Client.Client_Related;
 
 namespace WhatsAppUI.View.ViewModels
 {
@@ -41,6 +42,7 @@ namespace WhatsAppUI.View.ViewModels
 
             ThisClient = thisClient;
             ThisClient.OnUserChanged += UserChangedHandler;
+            ThisClient.OnGroupsChanged += GroupsChangedHandler;
 
             AddActiveUsers();
         }        
@@ -69,6 +71,53 @@ namespace WhatsAppUI.View.ViewModels
                     }
                 }
             });
+        }
+
+        /// <summary>
+        /// Event handler to add and remove the changed groups provided from the Model to update the UI
+        /// </summary>
+        private void GroupsChangedHandler(object sender, GroupChangedEventArgs e)
+        {
+            AddNewGroups(e.GroupChats);
+            RemoveGroups(e.GroupChats);
+        }
+
+        private void AddNewGroups(List<GroupChat> changedGroups)
+        {
+            foreach (GroupChat group in changedGroups)
+            {
+                // if ChatItems doesn't have the group then add it
+                if (ChatItemAt(group.ChatItemName) == null)
+                {
+                    ChatItems.Add(group);
+                }
+            }
+        }
+
+        private void RemoveGroups(List<GroupChat> changedGroups)
+        {
+            // filter UI connections list to only the grooup
+            List<GroupChat> onlyGroups = ChatItems.OfType<GroupChat>().ToList();
+
+            foreach (GroupChat group in onlyGroups)
+            {
+                // if the UI group chat was removed from the actual groups in the Model,
+                // then remove the group from the UI
+                if (!IsInGroups(group, changedGroups))
+                    ChatItems.Remove(group);
+            }
+        }
+
+        /// <summary>
+        /// Returns true if the provided group is in the list of GroupChats
+        /// </summary>
+        private bool IsInGroups(GroupChat providedGroup, List<GroupChat> groups)
+        {
+            foreach (GroupChat group in groups)
+            {
+                if (group.ChatItemName == providedGroup.ChatItemName) return true;
+            }
+            return false;
         }
 
         private IChatItem? ChatItemAt(string name)

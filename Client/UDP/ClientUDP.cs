@@ -151,24 +151,24 @@ namespace Client.UDP
 
         // <=== Group chats methods ===>
 
-        public void CreateGroup(string name)
+        public void SendGroupMessage(string groupName, string message)
         {
-            _groupsManager.CreateNewGroup(_client, name);
+            _groupsManager.SendToGroup(_client, _username, groupName, message);
         }
 
-        public void SendGroupMessage(string name, string message)
+        public void CreateGroup(string groupName)
         {
-            _groupsManager.SendToGroup(_client, _username, name, message);
+            _groupsManager.CreateNewGroup(_client, groupName);
+        }
+        
+        public void JoinGroup(string groupName)
+        {
+            _groupsManager.JoinGroup(_client, groupName);
         }
 
-        public void JoinGroup(string name)
+        public void LeaveGroup(string groupName)
         {
-            _groupsManager.JoinGroup(_client, name);
-        }
-
-        public void LeaveGroup(string name)
-        {
-            _groupsManager.LeaveGroup(_client, name);
+            _groupsManager.LeaveGroup(_client, groupName);
         }
 
 
