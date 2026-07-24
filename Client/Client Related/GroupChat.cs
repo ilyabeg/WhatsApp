@@ -1,6 +1,6 @@
 ﻿using Client.Interfaces;
 
-namespace Client.UDP
+namespace Client.Client_Related
 {
     public class GroupChat : IChatItem
     {

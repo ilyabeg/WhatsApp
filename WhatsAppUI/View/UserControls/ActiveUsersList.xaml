@@ -18,14 +18,13 @@
 
         <ContentControl Grid.Row="0" Content="{Binding ThisClient}" />
 
-        <ListBox Grid.Row="1" Background="Transparent" ItemsSource="{Binding ChatItems}" SelectedItem="{Binding SelectedChat, Mode=TwoWay}">
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    
-                    <TextBlock Text="{Binding ChatItemName}" />
-                    
-                </DataTemplate>
-            </ListBox.ItemTemplate>
+        <ListBox Grid.Row="1" Background="Transparent" 
+                 ItemsSource="{Binding ChatItems}" 
+                 SelectedItem="{Binding SelectedChat, Mode=TwoWay}">
+            
+            <!-- No data template because WPF automatically pulls template 
+                 from the Material Design resource dict -->
+            
         </ListBox>
         
     </Grid>
