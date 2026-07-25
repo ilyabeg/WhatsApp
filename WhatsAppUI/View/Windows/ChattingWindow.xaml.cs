@@ -9,6 +9,7 @@ namespace WhatsAppUI.View.Windows
         public ChattingWindow(IClient thisClient)
         {
             InitializeComponent();
+            this.Title = $"WhatsApp (username: {thisClient.ChatItemName})";
 
             MainViewModel mainViewModel = new MainViewModel(thisClient);
             mainViewModel.ChatViewModel.OnSystemCrash += ShowSystemError; // ChatViewModel System Errors
