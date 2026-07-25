@@ -173,17 +173,17 @@ namespace Client.UDP
 
         public void CreateGroup(string groupName)
         {
-            _groupsManager.CreateNewGroup(_client, groupName);
+            _groupsManager.CreateNewGroup(_listener, groupName);
         }
         
         public void JoinGroup(string groupName)
         {
-            _groupsManager.JoinGroup(_client, groupName);
+            _groupsManager.JoinGroup(_listener, groupName);
         }
 
         public void LeaveGroup(string groupName)
         {
-            _groupsManager.LeaveGroup(_client, groupName);
+            _groupsManager.LeaveGroup(_listener, groupName);
         }
 
 
@@ -283,15 +283,8 @@ namespace Client.UDP
         {
             try
             {
-                string str = Encoding.UTF8.GetString(receivedBytes);
-
                 // ignore my own broadcasts
-                if (str.StartsWith($"{_username}#") ||
-                    str.StartsWith($"$NEW_USER_SIGNAL$#{_username}") ||
-                    str.StartsWith($"$DISCONNECT_USER_SIGNAL$#{_username}") ||
-                    str.StartsWith($"$ADD_GROUPS_SIGNAL$#{_username}") ||
-                    CheckUsernameBroadcast(receivedBytes, remoteEndPoint)) 
-                    return;
+                if (MyBroadcast(receivedBytes, remoteEndPoint)) return;
 
                 int executed_option = _broadcastHandler.HandleBroadcast(receivedBytes, remoteEndPoint, _users, _groupsManager);
 
@@ -313,6 +306,19 @@ namespace Client.UDP
             {
                 OnSystemError?.Invoke(this, new SystemErrorEventArgs("Couldn't recieve Broadcast message."));
             }
+        }
+        
+        private bool MyBroadcast(byte[] receivedBytes, IPEndPoint remoteEndPoint)
+        {
+            string str = Encoding.UTF8.GetString(receivedBytes);
+            string[] splitted = str.Split('#', 4);
+
+            return (str.StartsWith($"{_username}#") ||
+                    str.StartsWith($"$NEW_USER_SIGNAL$#{_username}") ||
+                    str.StartsWith($"$DISCONNECT_USER_SIGNAL$#{_username}") ||
+                    str.StartsWith($"$ADD_GROUPS_SIGNAL$#{_username}") ||
+                    CheckUsernameBroadcast(receivedBytes, remoteEndPoint) ||
+                    (str.StartsWith("$GROUP_MESSAGE$") && splitted.Length >= 3 && splitted[2] == _username));
         }
 
         /// <summary>
