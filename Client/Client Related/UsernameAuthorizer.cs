@@ -10,7 +10,7 @@ namespace Client.Client_Related
         /// <summary>
         /// Retuens true if the provided username is free and false if it is taken.
         /// </summary>
-        public static bool IsFreeUsername(string username, UdpClient broadcaster)
+        public static bool IsFreeUsername(string username, UdpClient broadcaster, int portNum)
         {
             while (true)
             {
@@ -22,7 +22,7 @@ namespace Client.Client_Related
                 }
 
                 // broadcast username to check if it is taken
-                MulticastGroup.SendToMulticastGroup($"$CHECK_USERNAME_SIGNAL$#{username}", broadcaster);
+                MulticastGroup.SendToMulticastGroup($"$CHECK_USERNAME_SIGNAL$#{username}", broadcaster, portNum);
                 Thread.Sleep(250);
 
                 if (!FreeUsername)

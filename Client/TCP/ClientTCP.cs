@@ -64,7 +64,7 @@ namespace Client.TCP
             _udp_broadcast_listener.Client.ExclusiveAddressUse = false;
             _udp_broadcast_listener.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
-            _udp_broadcast_listener.Client.Bind(new IPEndPoint(IPAddress.Any, MulticastGroup.Port));
+            _udp_broadcast_listener.Client.Bind(new IPEndPoint(IPAddress.Any, MulticastGroup.TcpPort));
             MulticastGroup.AddToMulticastGroup(_udp_broadcast_listener);
         }
 
@@ -80,7 +80,7 @@ namespace Client.TCP
 
         public bool Connect(string username)
         {
-            bool isFree = UsernameAuthorizer.IsFreeUsername(username, _udp_login_client);
+            bool isFree = UsernameAuthorizer.IsFreeUsername(username, _udp_login_client, MulticastGroup.TcpPort);
 
             if (isFree)
             {
@@ -116,7 +116,7 @@ namespace Client.TCP
                 _tcp_client_handler.DisposeConnections();
 
                 // broadcast to everyone that this user disconnected
-                MulticastGroup.SendToMulticastGroup($"$DISCONNECT_USER_SIGNAL$#{_username}", _udp_login_client);
+                MulticastGroup.SendToMulticastGroup($"$DISCONNECT_USER_SIGNAL$#{_username}", _udp_login_client, MulticastGroup.TcpPort);
                 OnUserChanged?.Invoke(this, new UserChangedEventArgs(_username, State.Disconnecting));
 
                 // disconnect udp helpers
@@ -241,7 +241,7 @@ namespace Client.TCP
         private void BroadcastUsername()
         {
             // send username to multicast group so every user will know who is connected and where
-            MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}#{_listener.LocalEndpoint}", _udp_broadcast_listener);
+            MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}#{_listener.LocalEndpoint}", _udp_broadcast_listener, MulticastGroup.TcpPort);
         }
     }
 }

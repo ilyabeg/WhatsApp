@@ -79,7 +79,7 @@ namespace Client.UDP
             if (existing_groups != null)
             {
                 // broadcast the updated groups list to everyone
-                MulticastGroup.SendToMulticastGroup($"$ADD_GROUPS_SIGNAL$#{existing_groups}#{_username}", _client);
+                MulticastGroup.SendToMulticastGroup($"$ADD_GROUPS_SIGNAL$#{existing_groups}#{_username}", _client, MulticastGroup.UdpPort);
             }
         }
 
@@ -92,7 +92,7 @@ namespace Client.UDP
         /// <param name="username"></param>
         public bool Connect(string username)
         {            
-            bool isFree = UsernameAuthorizer.IsFreeUsername(username, _client);
+            bool isFree = UsernameAuthorizer.IsFreeUsername(username, _client, MulticastGroup.UdpPort);
 
             if (isFree)
             {
@@ -100,7 +100,7 @@ namespace Client.UDP
                 this.ChatItemName = username;
 
                 // broadcast my existence
-                MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}", _client);
+                MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}", _client, MulticastGroup.UdpPort);
 
                 OnUserChanged?.Invoke(this, new UserChangedEventArgs(username, State.Connecting));
                 return true; 
@@ -133,7 +133,7 @@ namespace Client.UDP
                 }
 
                 // broadcast to everyone that this user disconnected
-                MulticastGroup.SendToMulticastGroup($"$DISCONNECT_USER_SIGNAL$#{_username}", _client);                
+                MulticastGroup.SendToMulticastGroup($"$DISCONNECT_USER_SIGNAL$#{_username}", _client, MulticastGroup.UdpPort);                
 
                 // disconnect client
                 _client.Close();
@@ -161,7 +161,7 @@ namespace Client.UDP
             if (!string.IsNullOrWhiteSpace(message) && message.Trim().StartsWith("@all"))
             {
                 string sendingMessage = $"{_username}#{message.Trim()}";
-                MulticastGroup.SendToMulticastGroup(sendingMessage, _client);
+                MulticastGroup.SendToMulticastGroup(sendingMessage, _client, MulticastGroup.UdpPort);
             }
             else
             {
@@ -304,11 +304,11 @@ namespace Client.UDP
                     OnUserChanged?.Invoke(this, new UserChangedEventArgs(RemoteClientAt(remoteEndPoint), State.Connecting));
 
                     // send to new user my name so he knows I exist and all existing group chats.
-                    MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}", _client);
+                    MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}", _client, MulticastGroup.UdpPort);
 
                     string existing_groups = _groupsManager.GetGroups();
                     if (existing_groups != null)
-                        MulticastGroup.SendToMulticastGroup($"$ADD_GROUPS_SIGNAL$#{existing_groups}#{_username}", _client);
+                        MulticastGroup.SendToMulticastGroup($"$ADD_GROUPS_SIGNAL$#{existing_groups}#{_username}", _client, MulticastGroup.UdpPort);
                 }
             }
             catch 
