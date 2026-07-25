@@ -5,7 +5,6 @@ using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Xml.Linq;
 
 namespace Client.UDP
 {
@@ -175,8 +174,11 @@ namespace Client.UDP
                 }
                 else
                 {
-                    groupChats[groupName].MembersCount = existing_groups[groupName].MembersCount;
-                    groupsUpdated = true;
+                    if (groupChats[groupName].MembersCount != existing_groups[groupName].MembersCount)
+                    {
+                        groupChats[groupName].MembersCount = existing_groups[groupName].MembersCount;
+                        groupsUpdated = true;
+                    }
                 }
             }
 
