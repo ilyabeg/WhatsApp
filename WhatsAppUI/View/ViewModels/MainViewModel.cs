@@ -54,10 +54,15 @@ namespace WhatsAppUI.View.ViewModels
 
             AddActiveUsers();
 
-            NewGroupCommand = new RelayCommand(ExecuteNewGroup);
-            JoinGroupCommand = new RelayCommand(ExecuteJoinGroup);
-            LeaveGroupCommand = new RelayCommand(ExecuteLeaveGroup);
+            NewGroupCommand = new RelayCommand(NewGroupClick);
+            JoinGroupCommand = new RelayCommand(JoinGroupClick);
+            LeaveGroupCommand = new RelayCommand(LeaveGroupClick);
         }        
+
+        public void Disconnect()
+        {
+            ThisClient.DisconnectClient();
+        }
 
 
         // <=== Event Handlers ===>
@@ -150,23 +155,45 @@ namespace WhatsAppUI.View.ViewModels
         public event Action<List<string>> OnJoinGroupChat;
         public event Action<List<string>> OnLeaveGroupChat;
 
-        private void ExecuteNewGroup(object parameter)
-        {
-            OnNewGroupChat?.Invoke();
-        }
-        private void ExecuteJoinGroup(object parameter)
+        // run groups window options
+        private void NewGroupClick(object parameter) => OnNewGroupChat?.Invoke();
+        private void JoinGroupClick(object parameter)
         {
             List<GroupChat> groups = ChatItems.OfType<GroupChat>().ToList();
             List<string> groupNames = groups.Select(group => group.ChatItemName).ToList();
 
             OnJoinGroupChat?.Invoke(groupNames);
         }
-        private void ExecuteLeaveGroup(object parameter)
+        private void LeaveGroupClick(object parameter)
         {
             List<GroupChat> groups = ChatItems.OfType<GroupChat>().ToList();
             List<string> groupNames = groups.Select(group => group.ChatItemName).ToList();
 
-            OnLeaveGroupChat?.Invoke(groupNames);            
+            OnLeaveGroupChat?.Invoke(groupNames);
+        }
+
+
+        // <=== Group options actual Executions ===>
+        public void ExecuteNewGroup(string groupName)
+        {
+            if (ThisClient is ClientUDP thisClient)
+            {
+                thisClient.CreateGroup(groupName);
+            }
+        }
+        public void ExecuteJoinGroup(string groupName)
+        {
+            if (ThisClient is ClientUDP thisClient)
+            {
+                thisClient.JoinGroup(groupName);
+            }
+        }
+        public void ExecuteLeaveGroup(string groupName)
+        {
+            if (ThisClient is ClientUDP thisClient)
+            {
+                thisClient.LeaveGroup(groupName);
+            }
         }
 
 

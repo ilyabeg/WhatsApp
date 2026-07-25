@@ -1,5 +1,4 @@
 ﻿using Client.Interfaces;
-using Client.UDP;
 using System.Windows;
 using WhatsAppUI.View.ViewModels;
 
@@ -7,8 +6,6 @@ namespace WhatsAppUI.View.Windows
 {
     public partial class ChattingWindow : Window
     {
-        private IClient _thisClient;
-
         public ChattingWindow(IClient thisClient)
         {
             InitializeComponent();
@@ -16,21 +13,20 @@ namespace WhatsAppUI.View.Windows
             MainViewModel mainViewModel = new MainViewModel(thisClient);
             mainViewModel.ChatViewModel.OnSystemCrash += ShowSystemError; // ChatViewModel System Errors
 
-            _thisClient = thisClient; // save current client
             mainViewModel.OnNewGroupChat += NewGroupClicked;
             mainViewModel.OnJoinGroupChat += JoinGroupClicked;
             mainViewModel.OnLeaveGroupChat += LeaveGroupClicked;
 
-            // attach window closing event to DisconnectClient method inside each client to remove from View
+            // attach window closing event to Disconnect method inside the MainViewModel to remove clients from View
             this.Closing += (s, e) =>
             {
-                thisClient.DisconnectClient();
+                mainViewModel.Disconnect();
             };
 
             DataContext = mainViewModel;
         }
 
-        // groupchat options button event handlers
+        // groupchat options button event handlers to execute the actual group option INSIDE the ViewModel NOT the view
         private void NewGroupClicked()
         {
             GroupOptionsWindow groupOptionWindow = new GroupOptionsWindow(Option.NewGroup);
@@ -38,15 +34,12 @@ namespace WhatsAppUI.View.Windows
             // selected group event handler
             groupOptionWindow.OnGroupSelected += (groupName) =>
             {
-                if (_thisClient is ClientUDP thisUdpClient)
-                {
-                    thisUdpClient.CreateGroup(groupName);
-                }
+                if (DataContext is MainViewModel mainViewModel)
+                    mainViewModel.ExecuteNewGroup(groupName);
             };
 
             groupOptionWindow.Show(); // open window
         }
-
         private void JoinGroupClicked(List<string> availableGroups)
         {
             GroupOptionsWindow groupOptionWindow = new GroupOptionsWindow(Option.JoinGroup, availableGroups);
@@ -54,15 +47,12 @@ namespace WhatsAppUI.View.Windows
             // selected group event handler
             groupOptionWindow.OnGroupSelected += (groupName) =>
             {
-                if (_thisClient is ClientUDP thisUdpClient)
-                {
-                    thisUdpClient.JoinGroup(groupName);
-                }
+                if (DataContext is MainViewModel mainViewModel)
+                    mainViewModel.ExecuteJoinGroup(groupName);
             };
 
             groupOptionWindow.Show(); // open window
         }
-
         private void LeaveGroupClicked(List<string> availableGroups)
         {
             GroupOptionsWindow groupOptionWindow = new GroupOptionsWindow(Option.LeaveGroup, availableGroups);
@@ -70,10 +60,8 @@ namespace WhatsAppUI.View.Windows
             // selected group event handler
             groupOptionWindow.OnGroupSelected += (groupName) =>
             {
-                if (_thisClient is ClientUDP thisUdpClient)
-                {
-                    thisUdpClient.LeaveGroup(groupName);
-                }
+                if (DataContext is MainViewModel mainViewModel)
+                    mainViewModel.ExecuteLeaveGroup(groupName);
             };
 
             groupOptionWindow.Show(); // open window
