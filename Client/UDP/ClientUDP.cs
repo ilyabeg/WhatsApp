@@ -79,7 +79,7 @@ namespace Client.UDP
             if (existing_groups != null)
             {
                 // broadcast the updated groups list to everyone
-                MulticastGroup.SendToMulticastGroup($"$ADD_GROUPS_SIGNAL$#{existing_groups}", _client);
+                MulticastGroup.SendToMulticastGroup($"$ADD_GROUPS_SIGNAL$#{existing_groups}#{_username}", _client);
             }
         }
 
@@ -124,10 +124,12 @@ namespace Client.UDP
                 _disconnecting = true;
 
                 // leave all connected groups
-                List<string> myGroups = _groupsManager.groupChats.Keys.ToList();
-                foreach (string group in myGroups)
-                {
-                    LeaveGroup(group);
+                List<GroupChat> myGroups = _groupsManager.groupChats.Values.ToList();
+                foreach (GroupChat group in myGroups)
+                {                 
+                    // if im a member of this group, leave it
+                    if (group.IsMember)
+                        LeaveGroup(group.ChatItemName);
                 }
 
                 // broadcast to everyone that this user disconnected
@@ -306,7 +308,7 @@ namespace Client.UDP
 
                     string existing_groups = _groupsManager.GetGroups();
                     if (existing_groups != null)
-                        MulticastGroup.SendToMulticastGroup($"$ADD_GROUPS_SIGNAL$#{existing_groups}", _client);
+                        MulticastGroup.SendToMulticastGroup($"$ADD_GROUPS_SIGNAL$#{existing_groups}#{_username}", _client);
                 }
             }
             catch 
@@ -327,10 +329,12 @@ namespace Client.UDP
             {
                 if (!str.StartsWith('$') && splitted[0].Equals(_username)) return true; // not a signal just a simple message
 
+                if (str.StartsWith("$ADD_GROUPS_SIGNAL$") && splitted.Length >= 3 && splitted[2].Equals(_username))
+                    return true;
+
                 // signal sent by me
                 if ((str.StartsWith("$NEW_USER_SIGNAL$") ||
-                     str.StartsWith("$DISCONNECT_USER_SIGNAL$") ||
-                     str.StartsWith("$ADD_GROUPS_SIGNAL$")) &&
+                     str.StartsWith("$DISCONNECT_USER_SIGNAL$")) &&
                      splitted[1].Equals(_username)) 
                     return true;
 

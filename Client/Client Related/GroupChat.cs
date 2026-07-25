@@ -1,6 +1,7 @@
 ﻿using Client.Interfaces;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 
 namespace Client.Client_Related
 {
@@ -18,11 +19,21 @@ namespace Client.Client_Related
             } 
         }
 
+        // boolean to hide/show groups in the UI ONLY if a user is a member
+        [JsonIgnore]
+        public bool IsMember { get; set; } = false;
+
         // empty constructor for json deserialization
         public GroupChat() { }
         public GroupChat(string name)
         {
             ChatItemName = name;
+            MembersCount = 0;
+        }
+        public GroupChat(string name, bool isMember)
+        {
+            ChatItemName = name;
+            IsMember = isMember;
             MembersCount = 0;
         }
 

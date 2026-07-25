@@ -27,8 +27,9 @@ namespace Client.UDP
                 {
                     lock (_lock)
                     {
-                        GroupChat group = new GroupChat(name);
+                        GroupChat group = new GroupChat(name, true);
                         client.JoinMulticastGroup(GenerateIP(name));
+
                         group.MembersCount++;
 
                         groupChats.Add(name, group);
@@ -72,8 +73,6 @@ namespace Client.UDP
             try
             {   // try catch block in case user is not a member of the group
                 client.JoinMulticastGroup(GenerateIP(groupName));
-                groupChats[groupName].MembersCount++;
-                OnGroupChange?.Invoke(this, new GroupChangedEventArgs(groupChats.Values.ToList()));
             }
             catch { }
 
@@ -102,6 +101,7 @@ namespace Client.UDP
             {
                 client.JoinMulticastGroup(GenerateIP(name));
                 groupChats[name].MembersCount++;
+                groupChats[name].IsMember = true;
                 OnGroupChange?.Invoke(this, new GroupChangedEventArgs(groupChats.Values.ToList()));
             }
             catch
@@ -122,6 +122,7 @@ namespace Client.UDP
             {
                 client.DropMulticastGroup(GenerateIP(name));
                 groupChats[name].MembersCount--;
+                groupChats[name].IsMember = false;
 
                 if (groupChats[name].MembersCount == 0)
                 {
@@ -162,19 +163,27 @@ namespace Client.UDP
         public void AddGroups(string str)
         {
             Dictionary<string, GroupChat>? existing_groups = JsonSerializer.Deserialize<Dictionary<string, GroupChat>>(str);
+            if (existing_groups == null) return;
 
+            bool groupsUpdated = false;
             foreach (string groupName in existing_groups.Keys)
             {
                 if (!groupChats.ContainsKey(groupName))
                 {
                     groupChats.Add(groupName, existing_groups[groupName]);
+                    groupsUpdated = true;
                 }
                 else
                 {
                     groupChats[groupName].MembersCount = existing_groups[groupName].MembersCount;
+                    groupsUpdated = true;
                 }
             }
 
+            if (groupsUpdated)
+            {
+                OnGroupChange?.Invoke(this, new GroupChangedEventArgs(groupChats.Values.ToList()));
+            }
         }
     }
 }

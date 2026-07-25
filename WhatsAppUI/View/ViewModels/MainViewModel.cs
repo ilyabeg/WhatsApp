@@ -16,6 +16,9 @@ namespace WhatsAppUI.View.ViewModels
         // Users and Groups list
         public ObservableCollection<IChatItem> ChatItems { get; set; }
 
+        // list of all groups
+        private List<GroupChat> _allGroups = new List<GroupChat>();
+
 
         // the chat and message input ViewModel
         public ChatViewModel ChatViewModel { get; set; }
@@ -97,6 +100,8 @@ namespace WhatsAppUI.View.ViewModels
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
+                _allGroups = e.GroupChats;
+
                 AddNewGroups(e.GroupChats);
                 RemoveGroups(e.GroupChats);
             });
@@ -111,7 +116,10 @@ namespace WhatsAppUI.View.ViewModels
                 // if ChatItems doesn't have the group then add it
                 if (existingGroup == null)
                 {
-                    ChatItems.Add(group);
+                    if (group.IsMember)
+                    {
+                        ChatItems.Add(group);
+                    }
                 }
                 else
                 {
@@ -141,7 +149,9 @@ namespace WhatsAppUI.View.ViewModels
         {
             foreach (GroupChat group in groups)
             {
-                if (group.ChatItemName == providedGroup.ChatItemName) return true;
+                if (group.ChatItemName == providedGroup.ChatItemName) 
+                    // if group chat exists in the UI, keep it if client is a member or remove it if not
+                    return group.IsMember;
             }
             return false;
         }
@@ -167,17 +177,23 @@ namespace WhatsAppUI.View.ViewModels
         private void NewGroupClick(object parameter) => OnNewGroupChat?.Invoke();
         private void JoinGroupClick(object parameter)
         {
-            List<GroupChat> groups = ChatItems.OfType<GroupChat>().ToList();
-            List<string> groupNames = groups.Select(group => group.ChatItemName).ToList();
+            // all groups that i can join
+            List<string> available_groups = _allGroups
+                .Where(group => !group.IsMember)
+                .Select(group => group.ChatItemName)
+                .ToList();
 
-            OnJoinGroupChat?.Invoke(groupNames);
+            OnJoinGroupChat?.Invoke(available_groups);
         }
         private void LeaveGroupClick(object parameter)
         {
-            List<GroupChat> groups = ChatItems.OfType<GroupChat>().ToList();
-            List<string> groupNames = groups.Select(group => group.ChatItemName).ToList();
+            // all groups which im a member of
+            List<string> available_groups = _allGroups
+                .Where(group => group.IsMember)
+                .Select(group => group.ChatItemName)
+                .ToList();
 
-            OnLeaveGroupChat?.Invoke(groupNames);
+            OnLeaveGroupChat?.Invoke(available_groups);
         }
 
 

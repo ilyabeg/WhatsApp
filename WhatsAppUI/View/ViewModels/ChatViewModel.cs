@@ -75,7 +75,7 @@ namespace WhatsAppUI.View.ViewModels
             if (e.Sender == _thisClient.ChatItemName) return; // not get my own messages
 
             // display message only if the message is from my current peer or a Broadcast was sent
-            if (e.Message.StartsWith("@all") || e.Sender == _remoteClient.ChatItemName)
+            if (e.Message.StartsWith("@all") || (_remoteClient != null && e.Sender == _remoteClient.ChatItemName))
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {

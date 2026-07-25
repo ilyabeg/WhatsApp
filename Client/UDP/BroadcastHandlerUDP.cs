@@ -44,7 +44,7 @@ namespace Client.UDP
         public int HandleBroadcast(byte[] recievedBytes, IPEndPoint remoteEndPoint, Dictionary<string, IPEndPoint> users, GroupChats groups)
         {
             string recieved = Encoding.UTF8.GetString(recievedBytes);
-            string[] splitted = recieved.Split('#');
+            string[] splitted = recieved.Split('#', 4);
 
             if (splitted.Length < 2) return 0; // not signal
 
@@ -78,17 +78,6 @@ namespace Client.UDP
                 // notify UI the users list
                 string[] splitted = received_string.Split('#', 2);
                 OnUserChanged?.Invoke(this, new UserChangedEventArgs(splitted[1], State.Disconnecting));
-            }
-
-            // new groups received, invoke GroupsChangedEvent
-            else if (executed_option == 3)
-            {
-                string[] splitted = received_string.Split('#', 2);
-                string jsonGroups = splitted[1];
-                Dictionary<string, GroupChat>? dict = JsonSerializer.Deserialize<Dictionary<string, GroupChat>>(jsonGroups);
-                List<GroupChat> groupChats = dict.Values.ToList();
-
-                OnGroupsChanged?.Invoke(this, new GroupChangedEventArgs(groupChats));
             }
 
             // if group message received invoke OnMessageReceived from the GroupChat name
