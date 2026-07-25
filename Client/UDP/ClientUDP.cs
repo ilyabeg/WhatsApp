@@ -123,8 +123,15 @@ namespace Client.UDP
             {
                 _disconnecting = true;
 
+                // leave all connected groups
+                List<string> myGroups = _groupsManager.groupChats.Keys.ToList();
+                foreach (string group in myGroups)
+                {
+                    LeaveGroup(group);
+                }
+
                 // broadcast to everyone that this user disconnected
-                MulticastGroup.SendToMulticastGroup($"$DISCONNECT_USER_SIGNAL$#{_username}", _client);
+                MulticastGroup.SendToMulticastGroup($"$DISCONNECT_USER_SIGNAL$#{_username}", _client);                
 
                 // disconnect client
                 _client.Close();
@@ -310,15 +317,27 @@ namespace Client.UDP
         
         private bool MyBroadcast(byte[] receivedBytes, IPEndPoint remoteEndPoint)
         {
+            // if username check broadcast no need to continue to the broadcast handler
+            if (CheckUsernameBroadcast(receivedBytes, remoteEndPoint)) return true;
+
             string str = Encoding.UTF8.GetString(receivedBytes);
             string[] splitted = str.Split('#', 4);
 
-            return (str.StartsWith($"{_username}#") ||
-                    str.StartsWith($"$NEW_USER_SIGNAL$#{_username}") ||
-                    str.StartsWith($"$DISCONNECT_USER_SIGNAL$#{_username}") ||
-                    str.StartsWith($"$ADD_GROUPS_SIGNAL$#{_username}") ||
-                    CheckUsernameBroadcast(receivedBytes, remoteEndPoint) ||
-                    (str.StartsWith("$GROUP_MESSAGE$") && splitted.Length >= 3 && splitted[2] == _username));
+            if (splitted.Length >= 2)
+            {
+                if (!str.StartsWith('$') && splitted[0].Equals(_username)) return true; // not a signal just a simple message
+
+                // signal sent by me
+                if ((str.StartsWith("$NEW_USER_SIGNAL$") ||
+                     str.StartsWith("$DISCONNECT_USER_SIGNAL$") ||
+                     str.StartsWith("$ADD_GROUPS_SIGNAL$")) &&
+                     splitted[1].Equals(_username)) 
+                    return true;
+
+                // group message and sent by me
+                if (str.StartsWith("$GROUP_MESSAGE$") && splitted.Length >= 3 && splitted[2].Equals(_username)) return true;
+            }
+            return false;
         }
 
         /// <summary>

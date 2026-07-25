@@ -1,10 +1,11 @@
-﻿using Client.Events;
+﻿using Client.Client_Related;
+using Client.Events;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using Client.Client_Related;
+using System.Xml.Linq;
 
 namespace Client.UDP
 {
@@ -168,7 +169,12 @@ namespace Client.UDP
                 {
                     groupChats.Add(groupName, existing_groups[groupName]);
                 }
+                else
+                {
+                    groupChats[groupName].MembersCount = existing_groups[groupName].MembersCount;
+                }
             }
+
         }
     }
 }
