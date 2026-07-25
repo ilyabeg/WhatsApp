@@ -182,6 +182,17 @@ namespace Client.UDP
                 }
             }
 
+            // remove non existing groups
+            List<string> localGroupNames = groupChats.Keys.ToList();
+            foreach (string localGroup in localGroupNames)
+            {
+                if (!existing_groups.ContainsKey(localGroup))
+                {
+                    groupChats.Remove(localGroup);
+                    groupsUpdated = true;
+                }
+            }
+
             if (groupsUpdated)
             {
                 OnGroupChange?.Invoke(this, new GroupChangedEventArgs(groupChats.Values.ToList()));
