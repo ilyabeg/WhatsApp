@@ -13,7 +13,6 @@ namespace Client.Interfaces
         // define public events for ViewModel to subscribe to
         public event EventHandler<MessageRecievedEventArgs> OnMessageReceived;
         public event EventHandler<UserChangedEventArgs> OnUserChanged;
-        public event EventHandler<GroupChangedEventArgs> OnGroupsChanged;
         public event EventHandler<SystemErrorEventArgs> OnSystemError;
     }
 }

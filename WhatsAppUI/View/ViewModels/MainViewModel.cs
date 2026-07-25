@@ -52,7 +52,11 @@ namespace WhatsAppUI.View.ViewModels
 
             ThisClient = thisClient;
             ThisClient.OnUserChanged += UserChangedHandler;
-            ThisClient.OnGroupsChanged += GroupsChangedHandler;
+
+            if (ThisClient is ClientUDP thisUdpClient)
+            {
+                thisUdpClient.OnGroupsChanged += GroupsChangedHandler;
+            }
 
             AddActiveUsers();
 

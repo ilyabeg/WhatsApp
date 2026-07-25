@@ -1,19 +1,21 @@
-﻿using Client.Client_Related;
-using Client.Clients;
-using Client.Interfaces;
+﻿using Client.Events;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 
 namespace Client.TCP
 {
     internal class TcpClientHandler
     {
-        private static readonly int _buffer_size = 4096;
-        private static ConcurrentDictionary<string, TcpClient> _open_connections = new ConcurrentDictionary<string, TcpClient>();
+        public event EventHandler<SystemErrorEventArgs> OnSystemError;
+        public event EventHandler<MessageRecievedEventArgs> OnMessageReceived;
 
-        public static void ConnectAndSend(string remoteUsername, IPEndPoint remoteEP, string message, string author)
+        private static readonly int _buffer_size = 4096;
+        private ConcurrentDictionary<string, TcpClient> _open_connections = new ConcurrentDictionary<string, TcpClient>();
+
+        public void ConnectAndSend(string remoteUsername, IPEndPoint remoteEP, string message, string sender)
         {
             try
             {
@@ -31,21 +33,30 @@ namespace Client.TCP
 
                 NetworkStream stream = remote_client.GetStream();
 
-                byte[] buffer = Encoding.UTF8.GetBytes($"({author}): {message}");
+                // send message using json text
+                Dictionary<string, string> data = new Dictionary<string, string>
+                {
+                    { "Sender", sender },
+                    { "Message", message }
+                };
+                string jsonData = JsonSerializer.Serialize(data);
+
+                byte[] buffer = Encoding.UTF8.GetBytes(jsonData);
                 stream.Write(buffer, 0, buffer.Length);
             }
             catch (Exception e)
             {
-                // if writing to the stream failed, dispose the client.
-                Console.WriteLine($"[SYSTEM] Error! Couldn't write to client due to: {e.Message}");
+                // if writing to the stream failed, dispose the client.                
                 if (_open_connections.TryRemove(remoteUsername, out TcpClient client))
                 {
                     client.Dispose();
                 }
+
+                OnSystemError?.Invoke(this, new SystemErrorEventArgs($"Couldn't write to remote client due to: {e.Message}"));
             }
         }
 
-        public static void HandleRemoteClient(TcpClient client)
+        public void HandleRemoteClient(TcpClient client)
         {
             try
             {
@@ -56,18 +67,29 @@ namespace Client.TCP
                 while ((totalRead = stream.Read(buffer, 0, buffer.Length)) != 0)
                 {
                     string recievedMessage = Encoding.UTF8.GetString(buffer, 0, totalRead);
-                    //Printer.PrintMessage(recievedMessage);
+
+                    try
+                    {
+                        var received_data = JsonSerializer.Deserialize<Dictionary<string, string>>(recievedMessage);
+
+                        if (received_data != null && received_data.ContainsKey("Sender") && received_data.ContainsKey("Message"))
+                        {
+                            OnMessageReceived?.Invoke(this, new MessageRecievedEventArgs(received_data["Sender"], received_data["Message"]));
+                        }
+                    }
+                    catch
+                    { }
                 }
 
                 client.Dispose(); // dispose client when done
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Error! Connection to remote user lost due to: {e.Message}");
+                OnSystemError?.Invoke(this, new SystemErrorEventArgs($"Connection to remote client lost due to: {e.Message}"));
             }
         }
 
-        public static void DisposeConnections()
+        public void DisposeConnections()
         {
             foreach (TcpClient client in _open_connections.Values)
             {

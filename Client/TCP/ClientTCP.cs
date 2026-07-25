@@ -4,7 +4,6 @@ using Client.Events;
 using Client.Interfaces;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Client.TCP
@@ -13,233 +12,236 @@ namespace Client.TCP
     {
         // each tcp client is part client part server
 
-        private string _username;
-        private TcpListener _listener;     
-        
-        private UdpClient _broadcast_helper; // udp broadcast helper to let every user know who is active
-        private UdpClient _login_client;     // udp broadcast helper to let every user know who is active
-
-        private Dictionary<string, IPEndPoint> _users;
-
-
-        // declare console event and static reference to prevent garbage collection
-        private delegate bool ConsoleEventDelegate(int eventType);
-        private static ConsoleEventDelegate? _handler;
-
-        public string ChatItemName { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
+        // define public events for ViewModel to subscribe to
         public event EventHandler<MessageRecievedEventArgs> OnMessageReceived;
         public event EventHandler<UserChangedEventArgs> OnUserChanged;
-        public event EventHandler<GroupChangedEventArgs> OnGroupsChanged;
         public event EventHandler<SystemErrorEventArgs> OnSystemError;
 
-        // import winAPI dll to use the SetConsoleCtrlHandler method
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool SetConsoleCtrlHandler(ConsoleEventDelegate callback, bool add);
+        private string _username;
+        private TcpListener _listener;
+        public string ChatItemName { get; set; } // <- ChatItem name for UI
 
-        public void SendUnicastMessage(string remoteClientName, string message)
-        {
-            throw new NotImplementedException();
-        }
+        private UdpClient _udp_broadcast_listener; // udp broadcast helper to let every user know who is active
+        private UdpClient _udp_login_client;
 
-        public bool Connect(string username)
-        {
-            throw new NotImplementedException();
-        }
+        // tcp handlers
+        private TCPLoginHandler _loginHandler;
+        private BroadcastHandlerTCP _broadcastHandler;
+        private TcpClientHandler _tcp_client_handler;
 
-        public void DisconnectClient()
-        {
-
-        }
-
-        public List<string> GetActiveUsers()
-        {
-            return _users.Keys.ToList();
-        }
+        // other active users
+        private Dictionary<string, IPEndPoint> _users;
 
         public ClientTCP()
         {
-            //_users = new Dictionary<string, IPEndPoint>();
+            _users = new Dictionary<string, IPEndPoint>();
 
-            //InitListener();
-            //InitBroadcastHelper();
+            _loginHandler = new TCPLoginHandler();
+            _broadcastHandler = new BroadcastHandlerTCP();
+            _tcp_client_handler = new TcpClientHandler();
 
-            //Task.Run(Listen);            // <- run TCP listener task in the background
-            //Task.Run(RecieveBroadcasts); // <- run UDP broadcast listener task in the background
+            // event bubbling from Login Handler
+            _loginHandler.OnSystemError += (s, e) => OnSystemError?.Invoke(this, e);
 
-            //_login_client = new UdpClient(new IPEndPoint(IPAddress.Any, 0)); // bind to any port and ip
-            //Task.Run(() => TCPLoginHandler.LoginListener(_login_client));    // <- run login UDP listener task in the background            
+            // event bubbling from TcpClientHandler
+            _tcp_client_handler.OnSystemError += (s, e) => OnSystemError?.Invoke(this, e);
+            _tcp_client_handler.OnMessageReceived += (s, e) => OnMessageReceived?.Invoke(this, e);
 
-            //_username = UsernameAuthorizer.GetUsername(_login_client);            
+            InitTCPListener();
+            InitBroadcastHelper();
 
-            //// make new event delegate that runs the event callback 
-            //_handler = new ConsoleEventDelegate(ConsoleEventCallback);
-            //SetConsoleCtrlHandler(_handler, true);
+            Task.Run(Listen);            // <- run TCP listener task in the background
+            Task.Run(RecieveBroadcasts); // <- run UDP broadcast listener task in the background
+
+            _udp_login_client = new UdpClient(new IPEndPoint(IPAddress.Any, 0)); // bind to any port and ip
+            Task.Run(() => _loginHandler.LoginListener(_udp_login_client));      // <- run login UDP listener task in the background            
         }
 
-        ///// <summary>
-        ///// event callback that executes this code upon closing the console application using CTRL+C or X button
-        ///// </summary>
-        ///// <param name="eventType"></param>
-        ///// <returns></returns>
-        //private bool ConsoleEventCallback(int eventType)
-        //{
-        //    // 2 represents CTRL_CLOSE_EVENT (the X button)
-        //    // 0 represents CTRL+C 
-        //    if (eventType == 2 || eventType == 0)
-        //    {   
-        //        // broadcast to everyone that this user disconnected
-        //        MulticastGroup.SendToMulticastGroup($"$DISCONNECT_USER_SIGNAL$#{_username}#{_listener.LocalEndpoint}", _broadcast_helper);
-        //        TcpClientHandler.DisposeConnections(); // dispose all of the connections to this client
-        //    }
+        private void InitBroadcastHelper()
+        {
+            _udp_broadcast_listener = new UdpClient();
 
-        //    // return false to let normal OS termination continue
-        //    return false;
-        //}
+            _udp_broadcast_listener.Client.ExclusiveAddressUse = false;
+            _udp_broadcast_listener.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+
+            _udp_broadcast_listener.Client.Bind(new IPEndPoint(IPAddress.Any, MulticastGroup.Port));
+            MulticastGroup.AddToMulticastGroup(_udp_broadcast_listener);
+        }
+
+        private void InitTCPListener()
+        {
+            // bind to any free port
+            _listener = new TcpListener(IPAddress.Loopback, 0);
+            _listener.Start();
+        }
 
 
-        //private void InitBroadcastHelper()
-        //{
-        //    _broadcast_helper = new UdpClient();
+        // <=== IClient methods ===> 
 
-        //    _broadcast_helper.Client.ExclusiveAddressUse = false;
-        //    _broadcast_helper.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+        public bool Connect(string username)
+        {
+            bool isFree = UsernameAuthorizer.IsFreeUsername(username, _udp_login_client);
 
-        //    _broadcast_helper.Client.Bind(new IPEndPoint(IPAddress.Any, MulticastGroup.Port));
-        //    MulticastGroup.AddToMulticastGroup(_broadcast_helper);
-        //}
+            if (isFree)
+            {
+                _username = username;
+                this.ChatItemName = username;
 
-        //private void InitListener()
-        //{
-        //    // bind to any free port
-        //    _listener = new TcpListener(IPAddress.Loopback, 0);            
-        //    _listener.Start();
-        //}
+                // broadcast my existence
+                BroadcastUsername();
 
-        //public void Start()
-        //{            
-        //    BroadcastUsername();
-        //    Thread.Sleep(250);
+                OnUserChanged?.Invoke(this, new UserChangedEventArgs(username, State.Connecting));
+                return true;
+            }
 
-        //    Console.WriteLine("[SYSTEM] To Start chatting type: '@user' and write a message:");
-        //    Printer.PrintDictKeys("[SYSTEM] Active users:", _users);
+            // if taken we kill the new empty client...
+            _udp_broadcast_listener.Close();
+            _udp_login_client.Close();
 
-        //    while (true)
-        //    {
-        //        string message = Console.ReadLine();
+            return false;
+        }
 
-        //        if (string.IsNullOrWhiteSpace(message))
-        //        {
-        //            Console.WriteLine("Enter a valid input.");
-        //            continue;
-        //        }
+        /// <summary>
+        ///  Trigger safe Disconnect to client who closes his window
+        /// </summary>
+        private volatile bool _disconnecting = false;
+        public void DisconnectClient()
+        {
+            if (_udp_login_client != null && !string.IsNullOrEmpty(_username))
+            {
+                _disconnecting = true;
+                _loginHandler.Disconnecting = true;
 
-        //        Send(message);
-        //    }
-        //}
+                // dispose of this client's active connections
+                _tcp_client_handler.DisposeConnections();
 
-        //private void Send(string message)
-        //{
-        //    try
-        //    {
-        //        string selected_user = StringParser.ParseRemoteUser(message);
-        //        string actualMessage = StringParser.ParseActualMsg(message);
-        //        TcpClientHandler.ConnectAndSend(selected_user, _users[selected_user], actualMessage, _username); // connect and send to the user                              
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        Console.WriteLine($"[SYSTEM] Error! Couldn't write to user due to: {e.Message}");
-        //    }
-        //}        
+                // broadcast to everyone that this user disconnected
+                MulticastGroup.SendToMulticastGroup($"$DISCONNECT_USER_SIGNAL$#{_username}", _udp_login_client);
+                OnUserChanged?.Invoke(this, new UserChangedEventArgs(_username, State.Disconnecting));
 
-        ///// <summary>
-        ///// We run a new task for each remote client which tries to contact us because if we would 
-        ///// handle everything only in this method, the listener won't be able to listen and accept
-        ///// new clients while we're handling the chat between the original remote client. We need 
-        ///// to handle each client independently and listen for new clients simultaneously.
-        ///// </summary>
-        //private void Listen()
-        //{
-        //    while (true)
-        //    {
-        //        try
-        //        {
-        //            TcpClient remote_client = _listener.AcceptTcpClient();
-        //            Task.Run(() => TcpClientHandler.HandleRemoteClient(remote_client)); // <- run new Task for every remote user
-        //        }
-        //        catch (Exception e)
-        //        {
-        //            Console.WriteLine($"Error! Listener crashed due to: {e.Message}");
-        //        }
-        //    }            
-        //}
+                // disconnect udp helpers
+                _udp_login_client.Close();
+                _udp_broadcast_listener.Close();
+            }
+        }
 
-        ///// <summary>
-        ///// UDP Broadcast listener that listens for broadcasted messaged on the Multicast group port
-        ///// </summary>
-        //private void RecieveBroadcasts()
-        //{
-        //    IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0); // listen to any remote user
-        //    while (true)
-        //    {
-        //        try
-        //        {
-        //            byte[] recievedBytes = _broadcast_helper.Receive(ref remoteEndPoint);
-        //            ReadBroadcast(recievedBytes, remoteEndPoint);
-        //        }
-        //        catch (Exception e)
-        //        {
-        //            Console.WriteLine($"[SYSTEM] Error reading broadcast due to: {e.Message}");
-        //        }
-        //    }
-        //}
+        public void SendUnicastMessage(string remoteClientName, string message)
+        {
+            try
+            {
+                _tcp_client_handler.ConnectAndSend(remoteClientName, _users[remoteClientName], message, _username); // connect and send to the user                              
+            }
+            catch (Exception e)
+            {
+                OnSystemError?.Invoke(this, new SystemErrorEventArgs($"Couldn't write to user due to: {e.Message}."));
+            }
+        }
 
-        //private void ReadBroadcast(byte[] recievedBytes, IPEndPoint remoteEndPoint)
-        //{
-        //    if (CheckUsernameBroadcast(recievedBytes, remoteEndPoint)) return;
-           
-        //    int executed_option = BroadcastHandlerTCP.HandleBroadcast(recievedBytes, ref _users);
+        public List<string> GetActiveUsers() => _users.Keys.ToList();
 
-        //    // if BroadcastHandler couldn't handle the broadcast, print it out
-        //    if (executed_option == 0)
-        //    {
-        //        string recievedMessage = Encoding.UTF8.GetString(recievedBytes);
-        //        Console.WriteLine($"[SYSTEM] Recieved -> {recievedMessage} from broadcast.");
-        //    }            
 
-        //    if (executed_option == 1)
-        //        BroadcastUsername();
-        //}
+        /// <summary>
+        /// We run a new task for each remote client which tries to contact us because if we would 
+        /// handle everything only in this method, the listener won't be able to listen and accept
+        /// new clients while we're handling the chat between the original remote client. We need 
+        /// to handle each client independently and listen for new clients simultaneously.
+        /// </summary>
+        private void Listen()
+        {
+            while (true)
+            {
+                try
+                {
+                    TcpClient remote_client = _listener.AcceptTcpClient();
+                    Task.Run(() => _tcp_client_handler.HandleRemoteClient(remote_client)); // <- run new Task for every remote user
+                }
+                catch (Exception e)
+                {
+                    // if the user is disconnecting don't show system error msg boxes
+                    if (!_disconnecting)
+                        OnSystemError?.Invoke(this, new SystemErrorEventArgs("Couldn't recieve Unicast message."));
+                }
+            }
+        }
 
-        ///// <summary>
-        ///// Checks to see if the broadcast was the USERNAME CHECK SIGNAL and return true if so, else returns false
-        ///// </summary>
-        ///// <param name="receivedBytes"></param>
-        ///// <returns></returns>
-        //private bool CheckUsernameBroadcast(byte[] receivedBytes, IPEndPoint remoteEndPoint)
-        //{
-        //    string str = Encoding.UTF8.GetString(receivedBytes);
-        //    if (str.StartsWith("$CHECK_USERNAME_SIGNAL$"))
-        //    {
-        //        string[] splitted = str.Split('#');
-        //        string username = splitted[1];
 
-        //        // tell client that the username taken
-        //        if (username.Equals(_username))
-        //        {
-        //            byte[] buffer = Encoding.UTF8.GetBytes("$USERNAME_IS_TAKEN$");
-        //            _broadcast_helper.Send(buffer, buffer.Length, remoteEndPoint);
-        //        }
+        // <=== UDP broadcast helper methods ===>
 
-        //        return true;
-        //    }
-        //    return false;
-        //}
+        /// <summary>
+        /// UDP Broadcast listener that listens for broadcasted messaged on the Multicast group port
+        /// </summary>
+        private void RecieveBroadcasts()
+        {
+            IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0); // listen to any remote user
+            while (true)
+            {
+                try
+                {
+                    byte[] recievedBytes = _udp_broadcast_listener.Receive(ref remoteEndPoint);
+                    ReadBroadcast(recievedBytes, remoteEndPoint);
+                }
+                catch (Exception e)
+                {
+                    // if the user is disconnecting don't show system error msg boxes
+                    if (!_disconnecting)
+                        OnSystemError?.Invoke(this, new SystemErrorEventArgs("Couldn't recieve Broadcast message."));
+                }
+            }
+        }
 
-        //private void BroadcastUsername()
-        //{
-        //    // send username to multicast group so every user will know who is connected and where
-        //    MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}#{_listener.LocalEndpoint}", _broadcast_helper);
-        //}
+        private void ReadBroadcast(byte[] recievedBytes, IPEndPoint remoteEndPoint)
+        {
+            if (CheckUsernameBroadcast(recievedBytes, remoteEndPoint)) return;
+
+            // if 
+            string recieved = Encoding.UTF8.GetString(recievedBytes);
+            string[] splitted = recieved.Split('#');
+            if (splitted.Length >= 2 && splitted[1] == _username) return;
+
+            int executed_option = _broadcastHandler.HandleBroadcast(recievedBytes, ref _users);
+
+            // if new user added, send him my name so he adds me and update UI
+            if (executed_option == 1)
+            {
+                OnUserChanged?.Invoke(this, new UserChangedEventArgs(splitted[1], State.Connecting));
+                BroadcastUsername();
+            }
+
+            // if user removed, update UI
+            else if (executed_option == 2)
+            {
+                OnUserChanged?.Invoke(this, new UserChangedEventArgs(splitted[1], State.Disconnecting));
+            }
+        }
+
+        /// <summary>
+        /// Checks to see if the broadcast was the USERNAME CHECK SIGNAL and return true if so, else returns false
+        /// </summary>
+        /// <param name="receivedBytes"></param>
+        /// <returns></returns>
+        private bool CheckUsernameBroadcast(byte[] receivedBytes, IPEndPoint remoteEndPoint)
+        {
+            string str = Encoding.UTF8.GetString(receivedBytes);
+            if (str.StartsWith("$CHECK_USERNAME_SIGNAL$"))
+            {
+                string[] splitted = str.Split('#');
+                string username = splitted[1];
+
+                // tell client that the username taken
+                if (username.Equals(_username))
+                {
+                    byte[] buffer = Encoding.UTF8.GetBytes("$USERNAME_IS_TAKEN$");
+                    _udp_broadcast_listener.Send(buffer, buffer.Length, remoteEndPoint);
+                }
+                return true;
+            }
+            return false;
+        }
+
+        private void BroadcastUsername()
+        {
+            // send username to multicast group so every user will know who is connected and where
+            MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}#{_listener.LocalEndpoint}", _udp_broadcast_listener);
+        }
     }
 }
