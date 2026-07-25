@@ -106,10 +106,16 @@ namespace WhatsAppUI.View.ViewModels
         {
             foreach (GroupChat group in changedGroups)
             {
+                GroupChat? existingGroup = ChatItemAt(group.ChatItemName) as GroupChat;
+
                 // if ChatItems doesn't have the group then add it
-                if (ChatItemAt(group.ChatItemName) == null)
+                if (existingGroup == null)
                 {
                     ChatItems.Add(group);
+                }
+                else
+                {
+                    existingGroup.MembersCount = group.MembersCount;
                 }
             }
         }
