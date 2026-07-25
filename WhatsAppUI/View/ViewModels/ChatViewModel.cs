@@ -79,7 +79,10 @@ namespace WhatsAppUI.View.ViewModels
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    Messages.Add(new MessageBubble($"{e.Sender}: {e.Message}", false)); // <- false = Message sent NOT by me
+                    if (_remoteClient is GroupChat remoteGroup)
+                        Messages.Add(new MessageBubble($"{e.Message}", false));
+                    else
+                        Messages.Add(new MessageBubble($"{e.Sender}: {e.Message}", false)); // <- false = Message sent NOT by me
                 });
             }            
         }

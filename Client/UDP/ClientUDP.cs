@@ -37,17 +37,21 @@ namespace Client.UDP
 
         public ClientUDP()
         {
+            _client = new UdpClient(new IPEndPoint(IPAddress.Any, 0)); // bind to any port and ip
+            Task.Run(Listen); // run user listener task in the background
+
             _users = new Dictionary<string, IPEndPoint>();
             _groupsManager = new GroupChats();
             _broadcastHandler = new BroadcastHandlerUDP();
 
             // event bubbling from group chats
             _groupsManager.OnSystemError += (s, e) => OnSystemError?.Invoke(this, e);
-            _groupsManager.OnGroupChange += (s, e) => OnGroupsChanged?.Invoke(this, e);
+            _groupsManager.OnGroupChange += OnGroupChatsChanged;
 
             // event bubbling from broadcast handler
             _broadcastHandler.OnMessageReceived += (s, e) => OnMessageReceived?.Invoke(this, e);
             _broadcastHandler.OnUserChanged += (s, e) => OnUserChanged?.Invoke(this, e);
+            _broadcastHandler.OnGroupsChanged += (s, e) => OnGroupsChanged?.Invoke(this, e);
 
             _listeningEndPoint = new IPEndPoint(IPAddress.Any, _listening_port);
             InitListener();
@@ -64,6 +68,20 @@ namespace Client.UDP
             _listener.Client.Bind(_listeningEndPoint); // bind to multicast port
             MulticastGroup.AddToMulticastGroup(_listener);
         }
+        /// <summary>
+        /// If local groups have changed, invoke UI event to update UI and broadcast to all active connections so they update UI too
+        /// </summary>
+        private void OnGroupChatsChanged(object sender, GroupChangedEventArgs e)
+        {
+            OnGroupsChanged?.Invoke(this, e);
+
+            string? existing_groups = _groupsManager.GetGroups();
+            if (existing_groups != null)
+            {
+                // broadcast the updated groups list to everyone
+                MulticastGroup.SendToMulticastGroup($"$ADD_GROUPS_SIGNAL$#{existing_groups}", _client);
+            }
+        }
 
 
         // <=== IClient methods ===>
@@ -73,16 +91,14 @@ namespace Client.UDP
         /// </summary>
         /// <param name="username"></param>
         public bool Connect(string username)
-        {
-            _client = new UdpClient(new IPEndPoint(IPAddress.Any, 0)); // bind to any port and ip
-            Task.Run(Listen); // run user listener task in the background
-
+        {            
             bool isFree = UsernameAuthorizer.IsFreeUsername(username, _client);
 
             if (isFree)
             {
                 _username = username;
-                this.ChatItemName = username;                
+                this.ChatItemName = username;
+                _users.TryAdd(username, _client.Client.LocalEndPoint as IPEndPoint);
 
                 // broadcast my existence
                 MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}", _client);
@@ -267,7 +283,8 @@ namespace Client.UDP
         private void ReadBroadcast(byte[] receivedBytes, IPEndPoint remoteEndPoint)
         {
             try
-            {                
+            {
+                if (RemoteClientAt(remoteEndPoint) != null && RemoteClientAt(remoteEndPoint).Equals(_username)) return; // ignore my broadcasts
                 if (CheckUsernameBroadcast(receivedBytes, remoteEndPoint)) return;
 
                 int executed_option = _broadcastHandler.HandleBroadcast(receivedBytes, remoteEndPoint, _users, _groupsManager);

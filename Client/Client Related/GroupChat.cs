@@ -7,6 +7,7 @@ namespace Client.Client_Related
         public string ChatItemName { get; set; }
         public int MembersCount { get; set; }
 
+        public GroupChat() { }
         public GroupChat(string name)
         {
             ChatItemName = name;

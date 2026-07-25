@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
 using WhatsAppUI.View.Helpers;
-using WhatsAppUI.View.Windows;
 
 namespace WhatsAppUI.View.ViewModels
 {
@@ -96,8 +95,11 @@ namespace WhatsAppUI.View.ViewModels
         /// </summary>
         private void GroupsChangedHandler(object sender, GroupChangedEventArgs e)
         {
-            AddNewGroups(e.GroupChats);
-            RemoveGroups(e.GroupChats);
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                AddNewGroups(e.GroupChats);
+                RemoveGroups(e.GroupChats);
+            });
         }
 
         private void AddNewGroups(List<GroupChat> changedGroups)

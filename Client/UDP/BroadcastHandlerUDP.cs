@@ -1,7 +1,9 @@
-﻿using Client.Events;
+﻿using Client.Client_Related;
+using Client.Events;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 
 namespace Client.UDP
 {
@@ -33,6 +35,7 @@ namespace Client.UDP
         // define public events to bubble over to the Client
         public event EventHandler<MessageRecievedEventArgs> OnMessageReceived;
         public event EventHandler<UserChangedEventArgs> OnUserChanged;
+        public event EventHandler<GroupChangedEventArgs> OnGroupsChanged;
 
         /// <summary>
         /// if handler knows how to handle the broadcast, handle and return the number of the option
@@ -57,13 +60,12 @@ namespace Client.UDP
         }
 
         private void CheckExecutedOption(int executed_option, string received_string)
-        {
-            string[] splitted = received_string.Split('#');
-
+        {           
             // if handler doesn't recognise the broadcast signal the process it as a simple broadcast and return 0
             if (executed_option == 0)
             {
                 // has to be simple broadcast message for example: $"{username}#{message}"
+                string[] splitted = received_string.Split('#', 2);
                 string sender = splitted[0];
                 string message = splitted[1];
 
@@ -72,12 +74,27 @@ namespace Client.UDP
 
             // if we removed the user invoke user changed event
             else if (executed_option == 2)
+            {
                 // notify UI the users list
+                string[] splitted = received_string.Split('#', 2);
                 OnUserChanged?.Invoke(this, new UserChangedEventArgs(splitted[1], State.Disconnecting));
+            }
+
+            // new groups received, invoke GroupsChangedEvent
+            else if (executed_option == 3)
+            {
+                string[] splitted = received_string.Split('#', 2);
+                string jsonGroups = splitted[1];
+                Dictionary<string, GroupChat>? dict = JsonSerializer.Deserialize<Dictionary<string, GroupChat>>(jsonGroups);
+                List<GroupChat> groupChats = dict.Values.ToList();
+
+                OnGroupsChanged?.Invoke(this, new GroupChangedEventArgs(groupChats));
+            }
 
             // if group message received invoke OnMessageReceived from the GroupChat name
             if (executed_option == 4)
             {
+                string[] splitted = received_string.Split('#', 4);
                 string groupName = splitted[1];
                 string sender = splitted[2];
                 string message = splitted[3];
