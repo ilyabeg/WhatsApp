@@ -98,7 +98,6 @@ namespace Client.UDP
             {
                 _username = username;
                 this.ChatItemName = username;
-                _users.TryAdd(username, _client.Client.LocalEndPoint as IPEndPoint);
 
                 // broadcast my existence
                 MulticastGroup.SendToMulticastGroup($"$NEW_USER_SIGNAL$#{_username}", _client);
@@ -284,8 +283,15 @@ namespace Client.UDP
         {
             try
             {
-                if (RemoteClientAt(remoteEndPoint) != null && RemoteClientAt(remoteEndPoint).Equals(_username)) return; // ignore my broadcasts
-                if (CheckUsernameBroadcast(receivedBytes, remoteEndPoint)) return;
+                string str = Encoding.UTF8.GetString(receivedBytes);
+
+                // ignore my own broadcasts
+                if (str.StartsWith($"{_username}#") ||
+                    str.StartsWith($"$NEW_USER_SIGNAL$#{_username}") ||
+                    str.StartsWith($"$DISCONNECT_USER_SIGNAL$#{_username}") ||
+                    str.StartsWith($"$ADD_GROUPS_SIGNAL$#{_username}") ||
+                    CheckUsernameBroadcast(receivedBytes, remoteEndPoint)) 
+                    return;
 
                 int executed_option = _broadcastHandler.HandleBroadcast(receivedBytes, remoteEndPoint, _users, _groupsManager);
 
